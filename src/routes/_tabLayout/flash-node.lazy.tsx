@@ -33,7 +33,7 @@ const nodeOptions: SelectOption[] = [
   { value: "3", label: "Node 4" },
 ];
 
-function FlashNode() {
+export function FlashNode() {
   const { t } = useTranslation();
   const formRef = useRef<HTMLFormElement>(null);
   const [confirmFlashModal, setConfirmFlashModal] = useState(false);

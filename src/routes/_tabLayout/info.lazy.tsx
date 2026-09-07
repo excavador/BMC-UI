@@ -44,7 +44,7 @@ export const Route = createLazyFileRoute("/_tabLayout/info")({
   pendingComponent: InfoSkeleton,
 });
 
-function Info() {
+export function Info() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [rebootModalOpened, setRebootModalOpened] = useState(false);

@@ -19,7 +19,7 @@ export const Route = createFileRoute("/login")({
   component: Login,
 });
 
-function Login() {
+export function Login() {
   const { t } = useTranslation();
   const { mutate: mutateLogin, isPending } = useLoginMutation();
   const [message, setMessage] = useState("");

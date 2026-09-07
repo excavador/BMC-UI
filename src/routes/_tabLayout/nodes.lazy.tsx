@@ -239,7 +239,7 @@ const NodeRow = (
   );
 };
 
-function NodesTab() {
+export function NodesTab() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);

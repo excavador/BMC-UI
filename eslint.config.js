@@ -37,7 +37,15 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": [
         "warn",
-        { allowConstantExport: true },
+        {
+          allowConstantExport: true,
+          // Every TanStack Router file route must `export const Route =
+          // createFileRoute(...)`, which is a call expression rather than a
+          // constant, so `allowConstantExport` does not cover it. Without
+          // this the rule fires on every route in `src/routes/`, which is
+          // not something the codebase can restructure away.
+          allowExportNames: ["Route"],
+        },
       ],
       "@typescript-eslint/consistent-type-imports": "error",
 

@@ -19,7 +19,7 @@ export const Route = createFileRoute("/_tabLayout")({
   component: AppLayoutComponent,
 });
 
-function AppLayoutComponent() {
+export function AppLayoutComponent() {
   return (
     <div className="flex w-full flex-col items-center justify-center">
       <Header />

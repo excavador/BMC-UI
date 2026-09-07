@@ -43,7 +43,7 @@ function versionLabel(value: string | undefined | null): string {
   return value.startsWith("v") ? value : `v${value}`;
 }
 
-function About() {
+export function About() {
   const {
     t,
     i18n: { language },

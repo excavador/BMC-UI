@@ -7,7 +7,7 @@ export const Route = createLazyFileRoute("/")({
   component: Index,
 });
 
-function Index() {
+export function Index() {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
