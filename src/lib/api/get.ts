@@ -386,3 +386,52 @@ export function useUSBNode1Query() {
     },
   });
 }
+
+/**
+ * The state of bmcd's UART reader task, per node.
+ *
+ * `Initialized` is a task that exists and has not started reading;
+ * `Running` is one that is reading; `Stopped` is one that has ended. Typed
+ * as a plain string rather than a union of those three, on purpose: nothing
+ * checks the wire at runtime, and a daemon that grows a fourth state should
+ * put that state on the screen rather than have it narrowed away into a
+ * value the renderer believes is one of three.
+ */
+export type SerialReaderState = string;
+
+/**
+ * Whether the daemon is reading each node's UART.
+ *
+ * `POST`, not `GET`, and not because anything is being changed -- that is
+ * simply the method bmcd exposes `/api/bmc/serial/status` under. It sits in
+ * this file rather than `set.ts` because it reads.
+ *
+ * This says nothing about the modules. It reports the liveness of four
+ * reader tasks inside bmcd: a node that is powered off, or booted and
+ * silent, has a reader in exactly the same state as one mid-boot. It is
+ * worth showing because a `Stopped` reader explains an empty terminal that
+ * no amount of looking at the module would, and it must not be labelled as
+ * module health.
+ *
+ * `useQuery`, like the other endpoints new in our bmcd fork, so a daemon
+ * that does not have it degrades to one line of prose instead of taking the
+ * route to its `errorComponent`. A non-array body is normalised away for the
+ * same reason: an older daemon answering this path with something else must
+ * not put `undefined` in a status cell.
+ */
+export function useSerialStatusQuery() {
+  const api = useAxiosWithAuth();
+
+  return useQuery({
+    queryKey: ["serialStatus"],
+    queryFn: async () => {
+      const response =
+        await api.post<SerialReaderState[]>("/bmc/serial/status");
+      return Array.isArray(response.data) ? response.data : [];
+    },
+    // Stop polling once it has failed: an older daemon answers the same way
+    // in five seconds' time.
+    refetchInterval: (query) => (query.state.error ? false : 5000),
+    retry: false,
+  });
+}
