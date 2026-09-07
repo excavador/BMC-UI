@@ -3,6 +3,7 @@ import { type OptionalTranslations } from "@/locale/en";
 const translations = {
   navigation: {
     info: "Información",
+    network: "Red",
     nodes: "Nodos",
     console: "Consola",
     usb: "USB",
@@ -32,8 +33,6 @@ const translations = {
     ariaStorageUtilization: "Utilización de almacenamiento",
     backupButton: "Respaldar Datos de Usuario",
     fanControl: "Control de Ventilador",
-    networkInterfaces: "Interfaces de Red",
-    resetNetworkButton: "Restablecer Red",
     bmc: "BMC",
     rebootButton: "Reiniciar",
     reloadDaemonButton: "Recargar Daemon",
@@ -42,31 +41,10 @@ const translations = {
       "Tenga en cuenta que los nodos perderán energía hasta que se reinicien.",
     backupSuccess: "Archivo de respaldo descargado con éxito.",
     backupFailed: "Error al respaldar datos de usuario.",
-    resetNetworkSuccess: "Restablecimiento de red exitoso.",
-    resetNetworkFailed: "Restablecimiento de red fallido.",
     rebootSuccess: "El BMC se está reiniciando...",
     rebootFailed: "Error al reiniciar BMC",
     reloadDaemonSuccess: "El daemon BMC se está recargando...",
     reloadDaemonFailed: "Error al recargar el daemon BMC",
-    switchPorts: "Puertos del switch",
-    switchNodePorts: "Puertos de nodo",
-    switchUplinkPorts: "Puertos de enlace ascendente",
-    switchOtherPorts: "Otros puertos",
-    switchPortUp: "conectado",
-    switchPortDown: "desconectado",
-    switchPortAbsent: "no detectado",
-    switchPortSpeed: "{{speed}} Mb/s",
-    switchPortDuplexFull: "dúplex completo",
-    switchPortDuplexHalf: "semidúplex",
-    switchPortTraffic: "rx {{rx}} · tx {{tx}}",
-    switchPortErrors: "errores: {{rx}} rx / {{tx}} tx",
-    switchNotProbed: "Puertos del switch no detectados",
-    switchNotProbedDescription:
-      "El controlador del switch del BMC no detectó los puertos marcados abajo. Un módulo de cómputo detrás de un puerto de nodo no detectado no tiene red alguna, mientras que el BMC sigue siendo accesible, por lo que nada más en esta página parecerá incorrecto.",
-    switchNoPorts:
-      "El BMC no informó ningún puerto del switch. El controlador del switch no está funcionando, lo que deja a todos los módulos de cómputo sin red mientras el BMC sigue siendo accesible.",
-    switchPortsUnavailable:
-      "Este daemon del BMC no informa el estado de los puertos del switch.",
     thermalCelsius: "{{value}} °C",
     thermalAbsent: "no detectado",
     thermalUnavailable:
@@ -109,6 +87,32 @@ const translations = {
     fanDuty: "{{value}} % de ciclo",
     fanDutyNote:
       "El ciclo de trabajo es el valor PWM que la propia tabla cooling-levels de la placa asigna a este paso, tal como el demonio informa de esa tabla. El paso es la lectura honesta; el ciclo es lo que ordena. Una placa que no informa de ninguna tabla muestra solo el paso.",
+  },
+  network: {
+    header: "Las direcciones del BMC y el switch integrado",
+    networkInterfaces: "Interfaces de Red",
+    resetNetworkButton: "Restablecer Red",
+    resetNetworkSuccess: "Restablecimiento de red exitoso.",
+    resetNetworkFailed: "Restablecimiento de red fallido.",
+    switchPorts: "Puertos del switch",
+    switchNodePorts: "Puertos de nodo",
+    switchUplinkPorts: "Puertos de enlace ascendente",
+    switchOtherPorts: "Otros puertos",
+    switchPortUp: "conectado",
+    switchPortDown: "desconectado",
+    switchPortAbsent: "no detectado",
+    switchPortSpeed: "{{speed}} Mb/s",
+    switchPortDuplexFull: "dúplex completo",
+    switchPortDuplexHalf: "semidúplex",
+    switchPortTraffic: "rx {{rx}} · tx {{tx}}",
+    switchPortErrors: "errores: {{rx}} rx / {{tx}} tx",
+    switchNotProbed: "Puertos del switch no detectados",
+    switchNotProbedDescription:
+      "El controlador del switch del BMC no detectó los puertos marcados abajo. Un módulo de cómputo detrás de un puerto de nodo no detectado no tiene red alguna, mientras que el BMC sigue siendo accesible, por lo que nada más en esta página parecerá incorrecto.",
+    switchNoPorts:
+      "El BMC no informó ningún puerto del switch. El controlador del switch no está funcionando, lo que deja a todos los módulos de cómputo sin red mientras el BMC sigue siendo accesible.",
+    switchPortsUnavailable:
+      "Este daemon del BMC no informa el estado de los puertos del switch.",
   },
   nodes: {
     header: "Controlar la fuente de alimentación de los nodos conectados",

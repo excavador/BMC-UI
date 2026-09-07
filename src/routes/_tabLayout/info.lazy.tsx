@@ -7,19 +7,13 @@ import BoardHealth from "@/components/BoardHealth";
 import FanControl from "@/components/FanControl";
 import RebootModal from "@/components/RebootModal";
 import InfoSkeleton from "@/components/skeletons/info";
-import SwitchPorts from "@/components/SwitchPorts";
-import TableItem from "@/components/TableItem";
 import TabView from "@/components/TabView";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { useBackupMutation } from "@/lib/api/file";
 import { useInfoTabData } from "@/lib/api/get";
-import {
-  useNetworkResetMutation,
-  useRebootBMCMutation,
-  useReloadBMCMutation,
-} from "@/lib/api/set";
+import { useRebootBMCMutation, useReloadBMCMutation } from "@/lib/api/set";
 
 /**
  * Calculates the progress data based on the total bytes and free bytes.
@@ -50,8 +44,6 @@ export function Info() {
   const { toast } = useToast();
   const [rebootModalOpened, setRebootModalOpened] = useState(false);
   const { data } = useInfoTabData();
-  const { mutate: mutateResetNetwork, isPending: resetNetworkPending } =
-    useNetworkResetMutation();
   const { mutate: mutateRebootBMC, isPending: rebootPending } =
     useRebootBMCMutation();
   const { mutate: mutateReloadBMC, isPending: reloadPending } =
@@ -84,24 +76,6 @@ export function Info() {
       onError: (e) => {
         toast({
           title: t("info.backupFailed"),
-          description: e.message,
-          variant: "destructive",
-        });
-      },
-    });
-  };
-
-  const handleResetNetwork = () => {
-    mutateResetNetwork(undefined, {
-      onSuccess: () => {
-        toast({
-          title: t("info.resetNetworkButton"),
-          description: t("info.resetNetworkSuccess"),
-        });
-      },
-      onError: (e) => {
-        toast({
-          title: t("info.resetNetworkButton"),
           description: e.message,
           variant: "destructive",
         });
@@ -189,33 +163,6 @@ export function Info() {
       <BoardHealth />
 
       <FanControl />
-
-      <div>
-        <div className="mb-6 text-lg font-bold">
-          {t("info.networkInterfaces")}
-        </div>
-        <div className="space-y-4">
-          {data.ip.map((ip) => (
-            <dl key={ip.device}>
-              <TableItem term={ip.device} />
-              <TableItem term="ip">{ip.ip}</TableItem>
-              <TableItem term="mac">{ip.mac}</TableItem>
-            </dl>
-          ))}
-        </div>
-        <div className="mt-4">
-          <Button
-            type="button"
-            onClick={() => handleResetNetwork()}
-            isLoading={resetNetworkPending}
-            disabled={resetNetworkPending}
-          >
-            {t("info.resetNetworkButton")}
-          </Button>
-        </div>
-      </div>
-
-      <SwitchPorts />
 
       <div>
         <div className="mb-6 text-lg font-bold">{t("info.bmc")}</div>
