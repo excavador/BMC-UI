@@ -131,6 +131,18 @@ const translations = {
     resetConfirmDescription:
       "Dit zal Node {{nodeId}} geforceerd herstarten. Niet-opgeslagen gegevens gaan verloren.",
     dontAskAgain: "Niet meer vragen voor node-stroomacties",
+    powerOnFor: "ingeschakeld {{duration}} geleden",
+    powerOff: "uitgeschakeld",
+    powerOnUnreadable: "inschakeltijd niet leesbaar",
+    powerOnBeforeBmcBoot: "tijdstempel dateert van voor deze BMC-start",
+    linkUp: "verbinding actief",
+    linkDown: "geen verbinding",
+    linkAbsent: "switchpoort niet gedetecteerd",
+    linkSpeed: "{{speed}} Mb/s",
+    powerOnTimeNote:
+      "De inschakeltijd is een tijdstempel die het BMC schrijft wanneer het een node inschakelt, geen meting aan de draaiende module, en hij wordt afgezet tegen de klok van deze browser.",
+    powerOnTimeStaleNote:
+      "Een gemarkeerde node meldt een tijdstempel van voor de laatste start van dit BMC. Het herstarten van het BMC haalt de spanning van elke node, dus die tijdstempel overleefde een stroomcyclus die hem had moeten vervangen — een firmwarefout die pas in de huidige build is verholpen laat de oude waarde staan tot de module de volgende keer echt spanningsloos wordt. Lees die duren als onbetrouwbaar, niet als lange bedrijfstijden.",
   },
   console: {
     header: "Seriële console voor een compute-module",

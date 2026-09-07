@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ConfirmationModal from "@/components/ConfirmationModal";
+import NodeLiveness, { NodeLivenessNotes } from "@/components/NodeLiveness";
 import NodesSkeleton from "@/components/skeletons/nodes";
 import TabView from "@/components/TabView";
 import { Button } from "@/components/ui/button";
@@ -186,6 +187,8 @@ const NodeRow = (
             />
           </div>
         </div>
+
+        <NodeLiveness nodeId={props.nodeId} powerOnTime={props.power_on_time} />
       </div>
 
       <ConfirmationModal
@@ -311,6 +314,9 @@ export function NodesTab() {
             editMode={editMode}
           />
         ))}
+
+        <NodeLivenessNotes nodes={data} />
+
         <div className="mt-6 flex justify-end gap-4">
           <Button
             type="button"

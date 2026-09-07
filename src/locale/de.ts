@@ -132,6 +132,18 @@ const translations = {
     resetConfirmDescription:
       "Dies wird Knoten {{nodeId}} zwangsweise neu starten. Nicht gespeicherte Daten gehen verloren.",
     dontAskAgain: "Bei Knotenstromoperationen nicht mehr nachfragen",
+    powerOnFor: "eingeschaltet vor {{duration}}",
+    powerOff: "ausgeschaltet",
+    powerOnUnreadable: "Einschaltzeit nicht lesbar",
+    powerOnBeforeBmcBoot: "Zeitstempel liegt vor diesem BMC-Start",
+    linkUp: "Verbindung aktiv",
+    linkDown: "keine Verbindung",
+    linkAbsent: "Switch-Port nicht erkannt",
+    linkSpeed: "{{speed}} Mb/s",
+    powerOnTimeNote:
+      "Die Einschaltzeit ist ein Zeitstempel, den das BMC beim Einschalten eines Knotens schreibt, keine Abfrage des laufenden Moduls, und sie wird gegen die Uhr dieses Browsers gemessen.",
+    powerOnTimeStaleNote:
+      "Ein markierter Knoten meldet einen Zeitstempel von vor dem letzten Start dieses BMC. Ein Neustart des BMC trennt jeden Knoten von der Stromversorgung, dieser Zeitstempel hat also einen Stromzyklus überlebt, der ihn hätte ersetzen müssen — ein erst im aktuellen Build behobener Firmware-Fehler lässt den alten Wert stehen, bis das Modul das nächste Mal wirklich stromlos gemacht wird. Lesen Sie diese Dauern als unzuverlässig und nicht als lange Laufzeiten.",
   },
   console: {
     header: "Serielle Konsole für ein Compute-Modul",
