@@ -206,6 +206,13 @@ export const FlashProvider: React.FC<FlashProviderProps> = ({ children }) => {
     toast({ title, description: message });
   }, []);
 
+  // react-hooks/set-state-in-effect: this effect *is* the external-system sync
+  // the rule carves out -- bmcd's flash status arrives by polling and lands
+  // here as render-time query data rather than in a subscription callback, so
+  // the rule cannot tell the two apart. Silencing it beats rewriting the
+  // firmware-flashing state machine into the query layer in a lint bump, on a
+  // path that has never been exercised against a real board.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!isFlashing || !flashType) return;
 
@@ -246,6 +253,7 @@ export const FlashProvider: React.FC<FlashProviderProps> = ({ children }) => {
     handleSuccess,
     t,
   ]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return (
     <FlashContext.Provider

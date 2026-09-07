@@ -1,5 +1,5 @@
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ConfirmationModal from "@/components/ConfirmationModal";
@@ -16,20 +16,15 @@ export const Route = createLazyFileRoute("/_tabLayout/firmware-upgrade")({
 function FirmwareUpgrade() {
   const { t } = useTranslation();
   const formRef = useRef<HTMLFormElement>(null);
-  const [statusMessage, setStatusMessage] = useState("");
   const [confirmFlashModal, setConfirmFlashModal] = useState(false);
   const {
     flashType,
     isFlashing,
-    statusMessage: _statusMessage,
+    statusMessage,
     firmwareUpdateMutation,
     uploadProgress,
     handleFirmwareUpload,
   } = useFlash();
-
-  useEffect(() => {
-    if (_statusMessage) setStatusMessage(_statusMessage);
-  }, [_statusMessage]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

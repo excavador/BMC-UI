@@ -1,6 +1,6 @@
 import { createLazyFileRoute } from "@tanstack/react-router";
 import { InfoIcon } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import USBSkeleton from "@/components/skeletons/usb";
@@ -65,19 +65,18 @@ function USB() {
   );
   const [isUsbNode1Checked, setIsUsbNode1Checked] = useState(usbNode1);
 
-  useEffect(() => {
-    // When the user chooses flash mode for node 1, the checkbox needs to be unchecked.
-    if (selectedMode === "2" && selectedNode === "0") {
-      setIsUsbNode1Checked(false);
-    }
-  }, [selectedMode, selectedNode]);
+  // When the user chooses flash mode for node 1, the checkbox is forced off.
+  // Derived rather than pushed into state by an effect, so the value the form
+  // submits and the value the checkbox shows cannot disagree for a render.
+  const isNode1FlashMode = selectedMode === "2" && selectedNode === "0";
+  const usbNode1Value = isUsbNode1Checked && !isNode1FlashMode;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     try {
-      if (usbNode1 !== isUsbNode1Checked) {
-        await mutateUSBNode1({ alternative_port: isUsbNode1Checked });
+      if (usbNode1 !== usbNode1Value) {
+        await mutateUSBNode1({ alternative_port: usbNode1Value });
       }
       await mutateUSBMode({
         node: Number.parseInt(selectedNode),
@@ -140,11 +139,11 @@ function USB() {
               <Checkbox
                 id="usbHub"
                 name="usbHub"
-                checked={isUsbNode1Checked}
+                checked={usbNode1Value}
                 onCheckedChange={(checked) =>
                   setIsUsbNode1Checked(checked as boolean)
                 }
-                disabled={selectedMode === "2" && selectedNode === "0"}
+                disabled={isNode1FlashMode}
                 aria-label={t("usb.mode.usbNode1")}
               />
               <label
