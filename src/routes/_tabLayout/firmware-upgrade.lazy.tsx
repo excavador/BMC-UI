@@ -13,7 +13,7 @@ export const Route = createLazyFileRoute("/_tabLayout/firmware-upgrade")({
   component: FirmwareUpgrade,
 });
 
-function FirmwareUpgrade() {
+export function FirmwareUpgrade() {
   const { t } = useTranslation();
   const formRef = useRef<HTMLFormElement>(null);
   const [confirmFlashModal, setConfirmFlashModal] = useState(false);

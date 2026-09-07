@@ -47,7 +47,7 @@ const nodeOptions: SelectOption[] = [
   { value: "3", label: "Node 4" },
 ];
 
-function USB() {
+export function USB() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { data } = useUSBTabData();
