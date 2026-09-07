@@ -106,6 +106,9 @@ const translations = {
     healthAbsent: "nicht erkannt",
     healthUnavailable: "Dieser BMC-Daemon meldet keinen Board-Zustand.",
     ariaMemoryUtilization: "Speicherauslastung des Arbeitsspeichers",
+    fanDuty: "{{value}} % Tastgrad",
+    fanDutyNote:
+      "Der Tastgrad ist der PWM-Wert, den die bordeigene cooling-levels-Tabelle dieser Stufe zuordnet, so wie der Daemon diese Tabelle meldet. Die Stufe ist der ehrliche Messwert, der Tastgrad das, was sie ansteuert. Ein Board, das keine Tabelle meldet, zeigt nur die Stufe.",
   },
   nodes: {
     header: "Stromversorgung der verbundenen Knoten steuern",

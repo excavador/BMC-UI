@@ -177,12 +177,27 @@ export interface ThermalSensor {
  * `cur_state` here is where the fan actually is, which on firmware carrying
  * a thermal cooling-map is whatever the governor last decided rather than
  * whatever was last written.
+ *
+ * `levels` is the board's own `cooling-levels` table, read out of the device
+ * tree by the daemon and reported rather than assumed. It is what turns a
+ * step into a duty cycle: `levels[cur_state] / max_level`. This interface
+ * refused to print a percentage for as long as that table was not reported by
+ * any endpoint, because the only way to have one was to hardcode a single
+ * board's device tree and call it a measurement. Now it is measured.
+ *
+ * Null when the table could not be read. That is a real state on boards whose
+ * device tree does not declare one, and the step alone is what gets shown --
+ * never a duty computed from a guessed table.
  */
 export interface ThermalCooling {
   name: string;
   cur_state: number;
   max_state: number;
   present: boolean;
+  /** One PWM level per step, `max_state + 1` of them. Null when unreadable. */
+  levels: number[] | null;
+  /** The level that means full duty, e.g. 254. Null when unreadable. */
+  max_level: number | null;
 }
 
 /**
@@ -535,7 +550,16 @@ export function useThermalQuery() {
       const result = response.data.response[0].result;
       return {
         sensors: result.sensors ?? [],
-        cooling: result.cooling ?? [],
+        // The levels table is normalised the same way the lists are: a daemon
+        // that answers this endpoint at all is ours, but "answers it" and
+        // "reports a cooling-levels table" are different promises, and an
+        // undefined that reaches the duty arithmetic is how a percentage gets
+        // invented.
+        cooling: (result.cooling ?? []).map((fan) => ({
+          ...fan,
+          levels: fan.levels ?? null,
+          max_level: fan.max_level ?? null,
+        })),
       };
     },
     // Stop polling once it has failed: an older daemon answers the same way

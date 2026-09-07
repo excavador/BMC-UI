@@ -106,6 +106,9 @@ const translations = {
     healthAbsent: "no detectado",
     healthUnavailable: "Este demonio BMC no informa del estado de la placa.",
     ariaMemoryUtilization: "Uso de memoria",
+    fanDuty: "{{value}} % de ciclo",
+    fanDutyNote:
+      "El ciclo de trabajo es el valor PWM que la propia tabla cooling-levels de la placa asigna a este paso, tal como el demonio informa de esa tabla. El paso es la lectura honesta; el ciclo es lo que ordena. Una placa que no informa de ninguna tabla muestra solo el paso.",
   },
   nodes: {
     header: "Controlar la fuente de alimentación de los nodos conectados",
