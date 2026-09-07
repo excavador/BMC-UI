@@ -44,6 +44,9 @@ export function About() {
         <TableItem term={t("about.boardModel")}>
           {eepromLabel(data.board_model)} ({versionLabel(data.board_revision)})
         </TableItem>
+        <TableItem term={t("about.boardSerial")}>
+          {eepromLabel(data.board_serial)}
+        </TableItem>
         <TableItem term={t("about.hostname")}>{data.hostname}</TableItem>
         <TableItem term={t("about.daemonVersion")}>
           {versionLabel(data.version)}

@@ -144,6 +144,7 @@ const translations = {
   },
   about: {
     boardModel: "Modelo de placa",
+    boardSerial: "Número de serie de la placa",
     hostname: "Nombre de host",
     daemonVersion: "Versión del daemon",
     buildTime: "Fecha de compilación",

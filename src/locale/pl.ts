@@ -143,6 +143,7 @@ const translations = {
   },
   about: {
     boardModel: "Model płyty",
+    boardSerial: "Numer seryjny płyty",
     hostname: "Nazwa hosta",
     daemonVersion: "Wersja demona",
     buildTime: "Czas kompilacji",

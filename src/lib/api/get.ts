@@ -25,6 +25,8 @@ interface PowerTabResponse {
 interface AboutTabResponse {
   board_model: string;
   board_revision: string;
+  /** Absent on an unprogrammed board, and on any bmcd older than ours. */
+  board_serial: string | null;
   hostname: string;
   api: string;
   version: string;
