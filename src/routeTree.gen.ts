@@ -11,62 +11,41 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as TabLayoutRouteImport } from './routes/_tabLayout'
+import { Route as LoginRouteImport } from './routes/login'
 
 const IndexLazyRouteImport = createFileRoute('/')()
-const TabLayoutUsbLazyRouteImport = createFileRoute('/_tabLayout/usb')()
-const TabLayoutNodesLazyRouteImport = createFileRoute('/_tabLayout/nodes')()
-const TabLayoutInfoLazyRouteImport = createFileRoute('/_tabLayout/info')()
-const TabLayoutFlashNodeLazyRouteImport = createFileRoute(
-  '/_tabLayout/flash-node',
-)()
+const TabLayoutAboutLazyRouteImport = createFileRoute('/_tabLayout/about')()
 const TabLayoutFirmwareUpgradeLazyRouteImport = createFileRoute(
   '/_tabLayout/firmware-upgrade',
 )()
-const TabLayoutAboutLazyRouteImport = createFileRoute('/_tabLayout/about')()
+const TabLayoutFlashNodeLazyRouteImport = createFileRoute(
+  '/_tabLayout/flash-node',
+)()
+const TabLayoutInfoLazyRouteImport = createFileRoute('/_tabLayout/info')()
+const TabLayoutNodesLazyRouteImport = createFileRoute('/_tabLayout/nodes')()
+const TabLayoutUsbLazyRouteImport = createFileRoute('/_tabLayout/usb')()
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TabLayoutRoute = TabLayoutRouteImport.update({
-  id: '/_tabLayout',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexLazyRoute = IndexLazyRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
-const TabLayoutUsbLazyRoute = TabLayoutUsbLazyRouteImport.update({
-  id: '/usb',
-  path: '/usb',
+const TabLayoutRoute = TabLayoutRouteImport.update({
+  id: '/_tabLayout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TabLayoutAboutLazyRoute = TabLayoutAboutLazyRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => TabLayoutRoute,
 } as any).lazy(() =>
-  import('./routes/_tabLayout/usb.lazy').then((d) => d.Route),
-)
-const TabLayoutNodesLazyRoute = TabLayoutNodesLazyRouteImport.update({
-  id: '/nodes',
-  path: '/nodes',
-  getParentRoute: () => TabLayoutRoute,
-} as any).lazy(() =>
-  import('./routes/_tabLayout/nodes.lazy').then((d) => d.Route),
-)
-const TabLayoutInfoLazyRoute = TabLayoutInfoLazyRouteImport.update({
-  id: '/info',
-  path: '/info',
-  getParentRoute: () => TabLayoutRoute,
-} as any).lazy(() =>
-  import('./routes/_tabLayout/info.lazy').then((d) => d.Route),
-)
-const TabLayoutFlashNodeLazyRoute = TabLayoutFlashNodeLazyRouteImport.update({
-  id: '/flash-node',
-  path: '/flash-node',
-  getParentRoute: () => TabLayoutRoute,
-} as any).lazy(() =>
-  import('./routes/_tabLayout/flash-node.lazy').then((d) => d.Route),
+  import('./routes/_tabLayout/about.lazy').then((d) => d.Route),
 )
 const TabLayoutFirmwareUpgradeLazyRoute =
   TabLayoutFirmwareUpgradeLazyRouteImport.update({
@@ -76,12 +55,33 @@ const TabLayoutFirmwareUpgradeLazyRoute =
   } as any).lazy(() =>
     import('./routes/_tabLayout/firmware-upgrade.lazy').then((d) => d.Route),
   )
-const TabLayoutAboutLazyRoute = TabLayoutAboutLazyRouteImport.update({
-  id: '/about',
-  path: '/about',
+const TabLayoutFlashNodeLazyRoute = TabLayoutFlashNodeLazyRouteImport.update({
+  id: '/flash-node',
+  path: '/flash-node',
   getParentRoute: () => TabLayoutRoute,
 } as any).lazy(() =>
-  import('./routes/_tabLayout/about.lazy').then((d) => d.Route),
+  import('./routes/_tabLayout/flash-node.lazy').then((d) => d.Route),
+)
+const TabLayoutInfoLazyRoute = TabLayoutInfoLazyRouteImport.update({
+  id: '/info',
+  path: '/info',
+  getParentRoute: () => TabLayoutRoute,
+} as any).lazy(() =>
+  import('./routes/_tabLayout/info.lazy').then((d) => d.Route),
+)
+const TabLayoutNodesLazyRoute = TabLayoutNodesLazyRouteImport.update({
+  id: '/nodes',
+  path: '/nodes',
+  getParentRoute: () => TabLayoutRoute,
+} as any).lazy(() =>
+  import('./routes/_tabLayout/nodes.lazy').then((d) => d.Route),
+)
+const TabLayoutUsbLazyRoute = TabLayoutUsbLazyRouteImport.update({
+  id: '/usb',
+  path: '/usb',
+  getParentRoute: () => TabLayoutRoute,
+} as any).lazy(() =>
+  import('./routes/_tabLayout/usb.lazy').then((d) => d.Route),
 )
 
 export interface FileRoutesByFullPath {
@@ -158,20 +158,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_tabLayout': {
-      id: '/_tabLayout'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof TabLayoutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -179,32 +165,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_tabLayout/usb': {
-      id: '/_tabLayout/usb'
-      path: '/usb'
-      fullPath: '/usb'
-      preLoaderRoute: typeof TabLayoutUsbLazyRouteImport
-      parentRoute: typeof TabLayoutRoute
+    '/_tabLayout': {
+      id: '/_tabLayout'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof TabLayoutRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_tabLayout/nodes': {
-      id: '/_tabLayout/nodes'
-      path: '/nodes'
-      fullPath: '/nodes'
-      preLoaderRoute: typeof TabLayoutNodesLazyRouteImport
-      parentRoute: typeof TabLayoutRoute
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_tabLayout/info': {
-      id: '/_tabLayout/info'
-      path: '/info'
-      fullPath: '/info'
-      preLoaderRoute: typeof TabLayoutInfoLazyRouteImport
-      parentRoute: typeof TabLayoutRoute
-    }
-    '/_tabLayout/flash-node': {
-      id: '/_tabLayout/flash-node'
-      path: '/flash-node'
-      fullPath: '/flash-node'
-      preLoaderRoute: typeof TabLayoutFlashNodeLazyRouteImport
+    '/_tabLayout/about': {
+      id: '/_tabLayout/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof TabLayoutAboutLazyRouteImport
       parentRoute: typeof TabLayoutRoute
     }
     '/_tabLayout/firmware-upgrade': {
@@ -214,11 +193,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TabLayoutFirmwareUpgradeLazyRouteImport
       parentRoute: typeof TabLayoutRoute
     }
-    '/_tabLayout/about': {
-      id: '/_tabLayout/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof TabLayoutAboutLazyRouteImport
+    '/_tabLayout/flash-node': {
+      id: '/_tabLayout/flash-node'
+      path: '/flash-node'
+      fullPath: '/flash-node'
+      preLoaderRoute: typeof TabLayoutFlashNodeLazyRouteImport
+      parentRoute: typeof TabLayoutRoute
+    }
+    '/_tabLayout/info': {
+      id: '/_tabLayout/info'
+      path: '/info'
+      fullPath: '/info'
+      preLoaderRoute: typeof TabLayoutInfoLazyRouteImport
+      parentRoute: typeof TabLayoutRoute
+    }
+    '/_tabLayout/nodes': {
+      id: '/_tabLayout/nodes'
+      path: '/nodes'
+      fullPath: '/nodes'
+      preLoaderRoute: typeof TabLayoutNodesLazyRouteImport
+      parentRoute: typeof TabLayoutRoute
+    }
+    '/_tabLayout/usb': {
+      id: '/_tabLayout/usb'
+      path: '/usb'
+      fullPath: '/usb'
+      preLoaderRoute: typeof TabLayoutUsbLazyRouteImport
       parentRoute: typeof TabLayoutRoute
     }
   }
