@@ -9,6 +9,11 @@ jobs:
   tag:
     name: Tag
     runs-on: ubuntu-latest
+    # Upstream's release automation: it tags from package.json and releases
+    # what it tagged, on any push to main. In a fork that is a loaded gun --
+    # one push to main and it cuts a release under upstream's versioning. This
+    # guard makes it inert in every fork while leaving the file rebaseable.
+    if: github.repository == 'turing-machines/BMC-UI'
     outputs:
       new_tag: ${{ steps.tag.outputs.new_tag }}
 

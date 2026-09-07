@@ -137,8 +137,12 @@ a tag is a pointer its author can move.
 
 > Upstream's `tag-and-build.yml` is still in the tree and still watches `main`,
 > where it tags from `package.json` and releases what it tagged. We build
-> `hive`, so it never fires — **but do not push `main` in this fork**, or it
-> will cut a release nobody asked for.
+> `hive`, so it would never fire in normal use — but "normal use" is a rule
+> someone has to remember, and one push to `main` would cut a release under
+> upstream's versioning. Its `tag` job is therefore guarded with
+> `if: github.repository == 'turing-machines/BMC-UI'`, which makes it inert
+> here and in every other fork. The file is otherwise untouched, so it still
+> rebases cleanly, and the guard is correct upstream too.
 
 ---
 
