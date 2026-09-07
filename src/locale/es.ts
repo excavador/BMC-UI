@@ -132,6 +132,18 @@ const translations = {
     resetConfirmDescription:
       "Esto reiniciará forzosamente el Nodo {{nodeId}}. Cualquier dato no guardado se perderá.",
     dontAskAgain: "No volver a preguntar para operaciones de energía de nodos",
+    powerOnFor: "encendido hace {{duration}}",
+    powerOff: "apagado",
+    powerOnUnreadable: "hora de encendido no legible",
+    powerOnBeforeBmcBoot: "la marca es anterior a este arranque del BMC",
+    linkUp: "enlace activo",
+    linkDown: "enlace caído",
+    linkAbsent: "puerto del conmutador no detectado",
+    linkSpeed: "{{speed}} Mb/s",
+    powerOnTimeNote:
+      "La hora de encendido es una marca que el BMC escribe al encender un nodo, no una comprobación del módulo en marcha, y se mide contra el reloj de este navegador.",
+    powerOnTimeStaleNote:
+      "Un nodo marcado informa de una marca anterior al último arranque de este BMC. Reiniciar el BMC corta la alimentación de todos los nodos, así que esa marca sobrevivió a un ciclo de encendido que debería haberla sustituido: un fallo de firmware corregido solo en la compilación actual deja el valor antiguo en su sitio hasta que el módulo se apague de verdad la próxima vez. Lea esas duraciones como poco fiables, no como tiempos de actividad largos.",
   },
   console: {
     header: "Consola serie de un módulo de cómputo",
