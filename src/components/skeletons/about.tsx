@@ -8,6 +8,9 @@ export default function AboutSkeleton() {
         <TableItem term="Board model">
           <div className="h-6 w-48 animate-pulse bg-neutral-200 dark:bg-neutral-700"></div>
         </TableItem>
+        <TableItem term="Board serial">
+          <div className="h-6 w-48 animate-pulse bg-neutral-200 dark:bg-neutral-700"></div>
+        </TableItem>
         <TableItem term="Host name">
           <div className="h-6 w-48 animate-pulse bg-neutral-200 dark:bg-neutral-700"></div>
         </TableItem>

@@ -138,6 +138,7 @@ const translations = {
   },
   about: {
     boardModel: "主板型号",
+    boardSerial: "主板序列号",
     hostname: "主机名",
     daemonVersion: "守护进程版本",
     buildTime: "构建时间",
