@@ -15,7 +15,13 @@ import TabView from "@/components/TabView";
 import { useAboutTabData } from "@/lib/api/get";
 import { eepromLabel, versionLabel } from "@/lib/format";
 
-import { version } from "../../../package.json";
+import { version as packageVersion } from "../../../package.json";
+
+// What this build actually is. vite.config.ts injects the release tag when
+// one is known; package.json is upstream's and is not bumped by this fork, so
+// on its own it would report every build of ours as upstream's v3.3.7.
+declare const __BMC_UI_VERSION__: string | null;
+const version = __BMC_UI_VERSION__ ?? packageVersion;
 
 export const Route = createLazyFileRoute("/_tabLayout/about")({
   component: About,

@@ -50,6 +50,12 @@ jobs:
         run: devbox run -- npm ci
 
       - name: build
+        # Explicit, not inherited: `devbox run` does not promise to pass the
+        # workflow environment through, and a silently-absent version would
+        # fall back to package.json -- which is upstream's, and would make
+        # every release claim to be upstream v3.3.7 again.
+        env:
+          BMC_UI_VERSION: ${{ github.ref_name }}
         run: devbox run -- npm run build
 
       # The asset keeps upstream's name -- bmc-ui-<tag>.tar.gz wrapping a

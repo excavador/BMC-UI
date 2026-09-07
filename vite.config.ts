@@ -8,7 +8,19 @@ import svgr from "vite-plugin-svgr";
 const target = process.env.CLUSTER_URL ?? "https://turingpi.local";
 
 // https://vitejs.dev/config/
+// The About page used to read `version` straight out of package.json, which
+// is upstream's and which this fork deliberately does not bump -- so every
+// build we shipped claimed to be upstream v3.3.7, and a board running our
+// interface was indistinguishable from one running theirs on the one field
+// somebody checks to find out. The release workflow knows the tag; pass it
+// through here and fall back to package.json when building outside CI.
+const buildVersion =
+  process.env.BMC_UI_VERSION ?? process.env.GITHUB_REF_NAME ?? null;
+
 export default defineConfig({
+  define: {
+    __BMC_UI_VERSION__: JSON.stringify(buildVersion),
+  },
   plugins: [react(), svgr(), TanStackRouterVite(), tailwindcss()],
   resolve: {
     alias: {
