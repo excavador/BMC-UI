@@ -13,7 +13,7 @@ import AboutSkeleton from "@/components/skeletons/about";
 import TableItem from "@/components/TableItem";
 import TabView from "@/components/TabView";
 import { useAboutTabData } from "@/lib/api/get";
-import { versionLabel } from "@/lib/format";
+import { eepromLabel, versionLabel } from "@/lib/format";
 
 import { version } from "../../../package.json";
 
@@ -42,7 +42,7 @@ export function About() {
     <TabView>
       <dl className="flex flex-col">
         <TableItem term={t("about.boardModel")}>
-          {data.board_model} ({versionLabel(data.board_revision)})
+          {eepromLabel(data.board_model)} ({versionLabel(data.board_revision)})
         </TableItem>
         <TableItem term={t("about.hostname")}>{data.hostname}</TableItem>
         <TableItem term={t("about.daemonVersion")}>
