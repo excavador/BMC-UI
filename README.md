@@ -48,6 +48,18 @@ throwaway server on `127.0.0.1` that implements the documented subprotocol
 selection, because that handshake is what a first attempt at this page died
 on. Everything from the first byte onwards is written to a description.
 
+The four board panels added on 2026-09-07 — the firmware slots, board health,
+node liveness and the fan duty — are a fifth case, and the weakest one. The
+four response shapes they parse were given as exact and are merged in the
+daemon, so they are not guesses at an endpoint still being written the way the
+switch and thermal panels were. But **no code in this repository has parsed a
+single one of those responses**, live or recorded. Two of the hardware facts
+they exist to show *were* observed on the board — 116 MB of RAM with a
+firmware upload that failed for want of it, five free NAND eraseblocks out of
+2040, and three of four `power_on_time` stamps left stale by a firmware bug —
+and those are why the panels were written. The panels themselves have never
+run.
+
 That the doubled `v` needed fixing twice is the argument for reading this
 section literally. The first pass fixed it where it had been noticed, four
 rows on one page, and left the header printing `daemon vv2.2.0-unstable-hive.7`
@@ -64,9 +76,14 @@ a real check and it is not the same as having looked.
 | **The board serial is on the About page** | bmcd now sends `board_serial`. It is the number an asset register or a support conversation asks for, and until now the only way to read it off a running BMC was over SSH | A row under model and revision. Typed `string \| null`, because an unprogrammed board really does send null, and it renders the same dash an older daemon's missing key does |
 | **The switch ports are visible** | The Info page listed the BMC's own addresses and nothing about the six ports the compute modules hang off. A node port that never linked presents as a node you cannot reach while the BMC answers fine, which sends you looking in the wrong place. On the board as it stands, `ge1` is down and no page in this interface says so | A new panel, [described below](#the-switch-panel-in-detail). Built and linted clean, translation keys present in all six locales, helper behaviour exercised in isolation — but **the panel has never received a real response**; see the panel section for exactly what that leaves unverified |
 | **The board temperature is on the Info page** | Until this week no Turing Pi 2 could measure its own temperature: the SoC thermal sensor was missing from every device tree, so the fan ran flat out with nothing to regulate against. The sensor and a fan curve exist now and the SoC reads about 52 °C — and the interface showed a fan percentage and no temperature anywhere. A reader looks for it beside the fan, because the fan is what it drives | A `type=thermal` query feeding the Fan Control card, [described below](#the-temperature-and-the-fan-in-detail). Built and linted clean, keys in all six locales, the empty-list and unreadable-sensor paths written before the happy path — but **the card has never received a real response**: the endpoint is being implemented in parallel with this |
-| **The fan reads `4 of 6`, not `67%`** | The percentage was wrong twice over. It was `Math.round(state / max_state * 100)` — the step *index* as a fraction — so step 4 of 6 printed as 67 %; and the steps are not evenly spaced, so the real duty at step 4 is 102/254, about 40 %. The number on screen matched neither, and its continuous look invited the reader to believe a seven-position fan could sit anywhere between them | A segmented bar, one filled segment per step, with the step in words beside it. The duty cycle is deliberately **not** shown: the levels table lives in the device tree and no endpoint reports it, so a percentage here would be one board's device tree hardcoded into the interface and presented as a measurement |
+| **The fan reads `4 of 6`, not `67%`** | The percentage was wrong twice over. It was `Math.round(state / max_state * 100)` — the step *index* as a fraction — so step 4 of 6 printed as 67 %; and the steps are not evenly spaced, so the real duty at step 4 is 102/254, about 40 %. The number on screen matched neither, and its continuous look invited the reader to believe a seven-position fan could sit anywhere between them | A segmented bar, one filled segment per step, with the step in words beside it. The duty cycle was deliberately **not** shown at the time, because the levels table lives in the device tree and no endpoint reported it. `type=thermal` reports it now, and the duty is drawn beneath the step from the board's own numbers; see [the fan duty](#the-fan-duty-now-that-it-is-a-measurement) |
 | **Automatic fan control is visible** | Firmware hive.8 added a thermal cooling-map, so `step_wise` re-asserts the fan from the temperature every polling interval. Setting the fan through the existing API returns success, reads back correctly, and is silently undone about eight seconds later. A control that reports success and does nothing is worse than no control | The slider is **kept and still works** — on firmware without a cooling-map it is the only fan control there is. What changed is that the card stops hiding the governor: an `automatic` marker on the heading, a standing note that a setting here is an override, and — when a poll that finished *after* a commit disagrees with it — a warning naming the step the board went back to. The slider is what was asked for; the segments are what the fan is doing |
 | **A serial console for each module** | This interface can power a module on, flash an image to it and reboot it, and has never shown a line of what it printed. A module that fails before the network comes up — a bad image, the wrong device tree, a panic three seconds in — is invisible from here, and the only recourse is the serial header on the board itself | A new lazy route on `/console` carrying a real terminal, [described below](#the-serial-console-in-detail). Built and linted clean, keys in all six locales, and the handshake the previous attempt at this page died on exercised against a local stand-in — but **the console has never been connected to a live board** |
+
+| **The A/B firmware slots are on the Firmware Upgrade page** | The board updates firmware into whichever of two root volumes is not running and switches over on the next boot. The tab that performs that update said nothing about which slot is running, what a rollback would land on, or whether an update was already staged — the one screen where those facts decide what you do next was the one screen without them | A panel above the upload form, [described below](#the-firmware-slot-panel-in-detail). The rollback slot's version is left unread on purpose and `update_staged` stays three-valued. Built and linted clean, keys in all six locales — but **the panel has never received a real response** |
+| **The BMC's own health is on the Info page** | The Info page reported the user storage volume, the fan, the addresses and the switch, and nothing about the computer serving the page. That computer has 116 MB of RAM — a firmware upload has already failed on this machine for want of it — and five free NAND eraseblocks out of 2040. Neither number was reachable from a browser | Five rows from `type=health`, [described below](#board-health-in-detail). No threshold is invented: the memory bar reuses the Progress component's existing colouring and the NAND free count is not coloured at all. Built and linted clean, keys in all six locales; **never run against a board** |
+| **Nodes show power-on time and link state** | The Nodes page had a power toggle and two name fields and nothing about whether a module is alive. A node whose switch port never came up looked exactly like a healthy one | A line per node joining `type=node_info` and `type=network`, [described below](#node-liveness-in-detail). No new endpoint. An implausible `power_on_time` gets a quiet marker rather than being shown as fact, and the test for implausible is the BMC's own uptime rather than a heuristic. Built and linted clean; **never run against a board** |
+| **The fan shows its real duty** | The previous pass refused a percentage because the `cooling-levels` table was not reported by any endpoint. `type=thermal` reports it now, so step 4 of the board's `<0 16 32 64 102 170 254>` is a measured 102/254 rather than a belief about the hardware | The segmented `4 of 6` stays the primary reading and the duty goes underneath it, [described below](#the-fan-duty-now-that-it-is-a-measurement). `levels: null` falls back to the step alone. The helper was exercised directly on fifteen cases including every way the arithmetic could produce a plausible wrong number; **the card has still never parsed a real response** |
 | **Fonts: 669 KB → 176 KB** | Fonts were 45 % of the bundle on a board with 128 MB of flash, and most of them could not be drawn on any screen this interface renders | See below |
 | **A release pipeline** | The firmware pins the UI tarball by sha256 and needs somewhere to fetch it from that is not a dormant upstream | Packaging dry-run against a real build: the tarball unpacks to `dist/`, `sha256sum -c SHA256SUMS` passes, two runs are byte-identical. Nothing has been tagged |
 | **`LICENSE` ships inside the tarball** | Upstream's asset omits it while our `.mk` declares `BMC_UI_LICENSE_FILES = LICENSE`, so Buildroot has been looking for a file that was never there. We redistribute a GPL-2.0 work on a device | Buildroot extracts with `--strip-components=1`, so `dist/LICENSE` is exactly where that variable resolves |
@@ -325,11 +342,16 @@ seven fixed positions could sit anywhere between them.
 
 It is now a segmented bar: six segments for states 1–6, filled up to the
 current step, all empty at state 0, with `4 of 6` beside it. **The duty cycle
-is not shown.** It could only come from the `cooling-levels` table, that table
-lives in the device tree, and no endpoint reports it — so printing a
-percentage here would mean hardcoding one board's device tree into the
-interface and presenting it as a measurement. The step is the truthful number
-and it is the only one this interface can actually know.
+was not shown**, and the reason was that it could only come from the
+`cooling-levels` table, that table lives in the device tree, and no endpoint
+reported it — so printing a percentage would have meant hardcoding one board's
+device tree into the interface and presenting it as a measurement. The step
+was the truthful number and the only one this interface could actually know.
+
+That objection has since been answered: `type=thermal` now carries the table
+the daemon reads out of the device tree, and the duty is drawn from it. The
+step remains the primary reading. See
+[the fan duty](#the-fan-duty-now-that-it-is-a-measurement).
 
 ### The governor, and a control that used to lie
 
@@ -608,6 +630,301 @@ on.
 
 The hand-rolled font pipeline is untouched, measured rather than assumed:
 
+## The firmware slot panel, in detail
+
+`GET /api/bmc?opt=get&type=firmware_slots` is new in our bmcd fork. It
+describes the board's A/B layout: an upgrade is written into whichever of two
+root volumes is not running, and the board switches over on the next boot.
+
+```json
+{"response":[{"result":{
+  "running":{"volume":"rootfs","volume_id":1,"version":"v2.2.0-unstable-hive.8","size_bytes":37019648},
+  "rollback":{"volume":"rootfs_prev","volume_id":3,"version":null,"size_bytes":37011456},
+  "update_staged":false,"nextboot":null,"present":true,
+  "last_promotion":{"timestamp":"Mon Sep  7 19:30:22 UTC 2026",
+                    "message":"switch ports present: node1 node2 node3 node4"}}}]}
+```
+
+The panel sits **above the upload form** on the Firmware Upgrade tab, because
+it describes where the board is and the form is what changes that.
+
+| row | what it answers |
+|---|---|
+| **running** | the version this BMC is executing, the same string the header prints, here so it can be compared against what you are about to upload |
+| **rollback** | the volume a rollback lands on, and its size. Not its version; see below |
+| **next boot** | only when `nextboot` is non-null — a one-shot override is worth seeing and an absent one is not worth a row |
+| **update staged** | whether a reboot will switch slots |
+| **last promotion** | the boot-time health gate's verdict, with the board's own timestamp under it |
+
+### Three deliberate refusals
+
+**`rollback.version` is never guessed.** It is always null, permanently and
+correctly: that volume is not mounted, so nothing on a running system can open
+the file the version lives in. The row prints the volume, the size and the
+words *version not readable*. A dash would read as a daemon that forgot, and a
+version copied from anywhere else would be a fabrication about the firmware a
+rollback actually lands on — the one number in this panel that has to be
+either right or absent.
+
+**`update_staged` is three-valued.** True is the amber alert box the fan card
+introduced, placed above the rows because it is the single fact here that
+changes what a reboot does. Amber and not red: a staged update is the expected
+end of a successful upload, and an interface that cries fault at its own
+success teaches people to ignore it. False is a plain *no*. **Null is muted
+prose**, because "the boot environment could not be read" is a different claim
+from "no", and drawing a failed read as a reassuring *no* is how a board
+reboots into firmware nobody expected.
+
+**`last_promotion.timestamp` is rendered verbatim.** It arrives as the board's
+own `date(1)` output — `Mon Sep  7 19:30:22 UTC 2026`, two spaces and all —
+and not as ISO 8601. Handing that to `new Date()` would print `Invalid Date`
+on any engine that parses it differently, and the board's own words are more
+use here than a reformatting of them.
+
+### How it degrades
+
+| state | rendering |
+|---|---|
+| the request failed | one muted line: this daemon does not report firmware slots. The upload form, the one control the page exists for, is untouched |
+| `present: false` | one calm line: this board reports no A/B layout, so there is no second slot and nothing to roll back to. Not an alarm — a single-slot board is not a fault |
+| `present` missing entirely | falls back to the evidence: a running slot is what an A/B layout looks like. The panel must neither invent slots nor hide ones the daemon sent |
+| `running` or `rollback` null | that row reads *not reported* and the other rows stand |
+| `volume_id` or `size_bytes` not finite | the fragment drops out of the detail line rather than printing `id undefined` |
+| `last_promotion` null | the row and its explanatory note both disappear |
+
+A plain `useQuery`, like the switch and thermal panels, for the same reason: a
+suspense query that throws takes the route to its `errorComponent`, and on
+this route that means losing the upload form because a status panel could not
+be filled in. It polls at **ten seconds** rather than the Info page's five.
+Slot state moves at the pace of a flash or a reboot; the one transition worth
+catching from this page is `update_staged` turning true when an upload
+finishes writing, and ten seconds catches that well inside the time it takes
+to read the panel — on a board with 116 MB of RAM that is being asked to write
+firmware at that moment.
+
+## Board health, in detail
+
+`GET /api/bmc?opt=get&type=health` is new in our bmcd fork. It is on the Info
+page between user storage and the fan, which puts the memory bar next to the
+storage bar it borrows its rendering from.
+
+The Info page reported the user storage volume, the fan, the addresses and the
+switch, and nothing at all about the computer serving the page. Two facts make
+that worth fixing and both were observed on hardware: the board has **116 MB
+of RAM**, and a firmware upload has already failed on this machine for want of
+it while every screen here said the board was fine; and its NAND is down to
+**five free eraseblocks out of 2040** on a device that gets reflashed
+regularly.
+
+| row | what is shown |
+|---|---|
+| **uptime** | a duration, at most two units. Also the frame every other duration in this interface has to be read against |
+| **load** | the three averages to two decimals, with `1 / 5 / 15 min` beside them |
+| **memory** | the storage section's own Progress bar, plus free and available in words |
+| **NAND** | free of total eraseblocks, the same figure in bytes, bad and reserved counts |
+| **clock** | sync state, source, stratum, offset, what measured it, and the RTC devices |
+
+### What is not invented
+
+**The memory bar is `total - available`, not `total - free`.** `available` is
+the kernel's own estimate of what a new allocation could actually get, and on
+a 116 MB board that difference is most of the answer to whether an upload will
+fit. `free` is printed beside it because it is the number a reader of
+`/proc/meminfo` expects to see, not because it is the one to act on. The
+75/90 colouring is the `Progress` component's existing `warningOnHigh`
+behaviour, which user storage has had all along — not a threshold introduced
+here.
+
+**The NAND free count is not coloured at all.** Five of 2040 looks alarming
+and I do not know that it is: how much headroom a UBI volume needs before it
+is in trouble is not something any endpoint reports, and a red bar drawn from
+a guess would be the fan percentage all over again. Bad eraseblocks *are*
+coloured when non-zero, which is not a threshold — zero and non-zero are
+different kinds of fact, and a bad block never comes back.
+
+**`offset_seconds` is parsed, not printed.** serde emits a small float in
+exponent form, so the board sends `-3.077e-6` and means three microseconds.
+Raw, that is not a time anyone reads; `toFixed` on it gives `-0.000003`, which
+is no better. It is rescaled to whichever of seconds, milliseconds or
+microseconds keeps a digit in front of the point. The micro sign used is
+**U+00B5**, inside the `latin` subset this fork still ships — not U+03BC, the
+Greek mu, whose subset was dropped.
+
+**`measured_by` is carried through** rather than dropped, because an offset
+with no provenance is a number to be believed rather than checked.
+
+### How it degrades
+
+| state | rendering |
+|---|---|
+| the request failed | one muted line, and the rest of the Info page — storage, fan, addresses, switch, reboot buttons — is untouched |
+| a section the daemon omitted | that row alone reads *not detected*; the other four stand |
+| a section with `present: false` | the same words, in amber. The board tried and could not read |
+| a number that is not finite | the section falls back to *not detected* rather than printing `NaN` |
+| `clock.synchronised: false` | amber. A BMC whose clock has drifted stamps every log line and every node power-on time with the wrong moment |
+| `clock.synchronised: null` | **muted prose**, not amber. chrony could not be reached, so nothing here knows either way, and drawing that as "not synchronised" would be an accusation the daemon never made |
+| `rtc` empty or missing | the RTC line disappears |
+
+Durations are new shared furniture. `durationParts` does the arithmetic and
+returns units rather than words; a hook joins them through the translation
+function, so a locale that writes its units differently gets to. At most two
+units, because "roughly how long" is the question. An empty result means
+*there is no duration to render* rather than zero: a negative elapsed time
+means a clock somewhere disagrees, and folding it to `0 s` would hide that.
+
+A plain `useQuery` for the reason the two panels beside it are, polling at the
+same five seconds so the page has one tick rather than three.
+
+## Node liveness, in detail
+
+The Nodes page has a power toggle and two editable name fields, and said
+nothing about whether a module is actually there. A node whose switch port
+never came up looked exactly like a healthy one — the BMC answers, the toggle
+says on, and the module is unreachable.
+
+**Nothing new is fetched.** Both facts come from endpoints this interface
+already talks to: `type=node_info` carries `power_on_time` per node and was
+being used only to decide whether the toggle looks on, and `type=network`
+carries the switch port each module hangs off, where `node1`–`node4` map to
+modules 1–4. React Query dedupes both by key, so four node rows share one
+request each.
+
+Link state is the louder half and uses the same three-way distinction the Info
+panel draws: a port the switch driver never probed is red, a probed port with
+no link is amber, a linked port shows its negotiated speed. When
+`type=network` is missing the fragment simply is not there — the Nodes page is
+not the place to announce that the switch endpoint is absent, and the Info
+panel already has a section devoted to it.
+
+### The stale `power_on_time`, and what was chosen
+
+`power_on_time` is a stored wall-clock stamp, not a probe of the running
+module. On this board it is **wrong for three nodes out of four**: a firmware
+bug fixed only in the current build left the previous boot's value in place,
+and it will stay there until each module is next genuinely power-cycled. Four
+confident durations of which one is true is worse than no durations at all.
+
+The choice was to **show the value and withdraw the claim**, with the marker
+computed rather than guessed:
+
+| option | why not |
+|---|---|
+| render the duration as fact | three of four would be lies on the board this was written for |
+| hide `power_on_time` entirely | it is real data the board sent, and the one node it is right about is worth reading |
+| mark whichever node disagrees with its siblings | marks the wrong node about as often as the right one. A cluster where three modules were rebooted this morning and one has been up for a month is entirely normal, and the long-running one is not the suspect |
+| **mark any stamp that predates this BMC's boot** | **chosen.** Rebooting the BMC cuts power to every node — upstream's own reboot dialog says exactly that — so a stamp from before the current BMC boot describes a power cycle that has already happened and cannot be the one the module is running from |
+
+`type=health` reports the BMC's uptime, which is what makes that comparison
+available at all. A marked node keeps its duration, muted, with *stamp
+predates this BMC boot* in amber beside it, and a sentence under the list
+saying what that means. **It is worded as a comparison, not a diagnosis**:
+the page reports what it compared, not a conclusion about the module.
+
+Two guards on it. A **five-minute tolerance**, because the comparison mixes the
+board's wall clock with the browser's, and a browser running a few minutes
+fast would otherwise mark a node that came up seconds after the BMC did; the
+values this exists to catch are from an entirely different boot, hours or days
+out, so the tolerance costs nothing. And **nothing is marked at all** on a
+daemon that does not report health: a marker that cannot be computed is better
+absent than invented.
+
+### Durations, and the "now" they are measured against
+
+Elapsed time is computed against `dataUpdatedAt` rather than `Date.now()`.
+That is not only because `react-hooks` 7 rightly flags a `Date.now()` call
+during render as impure — it is the better number. `dataUpdatedAt` is the
+moment the value being subtracted was actually read from the board, so the
+uptime and the boot instant derived from it cannot drift apart between polls,
+and a duration reads *as of the last time this page heard from the board*. The
+freshest of the health and node reads is used: on our fork the health poll
+advances it every five seconds, and on an older daemon it falls back to the
+node query's own fetch.
+
+### How it degrades
+
+| state | rendering |
+|---|---|
+| `power_on_time` null | *powered off*, muted |
+| a stamp that yields no duration — in the future, or not a finite number | *power-on time not readable*, muted. Never `0 s` |
+| no `type=health` | the duration stands with no marker |
+| no `type=network`, or no port named `node<N>` | no link fragment at all |
+| `present: false` on the port | *switch port not detected*, red |
+| a linked port with no `speed_mbps` | the link reads up with no rate |
+| every stamp plausible | the paragraph about the marker does not appear |
+
+## The fan duty, now that it is a measurement
+
+The previous pass refused to print a fan percentage and recorded why: a step
+is an index into the `cooling-levels` table the device tree declares, those
+levels are not evenly spaced, and no endpoint reported the table — so any
+percentage would have been one board's device tree hardcoded into a browser
+and presented as a measurement.
+
+**That objection is answered.** `type=thermal`'s cooling entries now carry the
+table the daemon reads out of the board's own device tree:
+
+```json
+"cooling":[{"name":"pwm-fan","cur_state":4,"max_state":6,"present":true,
+            "levels":[0,16,32,64,102,170,254],"max_level":254}]
+```
+
+Step 4 is `levels[4] / max_level` = 102/254 ≈ **40 %**, computed from the
+numbers the board sent rather than from anything this repository believes
+about the hardware.
+
+The segmented bar and `4 of 6` **stay the primary reading**. They are the
+honest one: the fan has seven positions and this is which of them it is in,
+and no percentage changes that. The duty goes underneath, smaller and muted,
+because it is the derived number and it answers a different question — what
+the step commands rather than which step it is. Both are computed from the
+same value the bar draws, so the two lines beside each other can never
+describe two different positions of one fan. The bar also carries both in
+`aria-valuetext`, so a screen reader gets the duty rather than a bare number
+out of six.
+
+`fanDutyPercent` returns null — and the step stands alone — for every way
+the arithmetic could otherwise produce a plausible wrong number:
+
+| input | result |
+|---|---|
+| `levels: null`, or the key missing | null. A board that cannot report its table shows the step alone |
+| an empty table | null |
+| `max_level` null, zero or negative | null |
+| a step that is not an integer index into the table | null |
+| a level that is not finite | null |
+| a level above `max_level` | null. That is a contradiction in the table, not a duty over 100 % |
+
+A fan that `type=cooling` knows and `type=thermal` does not gets a row with a
+step and no duty, which is right: nothing here has a table for it. The
+provenance note under the card appears only where a duty is actually drawn.
+
+## Board panels pass: proof it still builds
+
+The same battery every pass here uses, from an empty `node_modules`:
+`devbox run -- npm ci && npm run lint && npm run build` clean, `npm audit`
+still **zero**, `eslint .` back to the same **3 warnings and 0 errors**, `git
+status` clean after a build — `routeTree.gen.ts` does not move, because none
+of this adds a route. **Two consecutive builds are byte-identical across all
+34 files**, which is the assertion the sha256-pinned tarball rests on.
+
+The helpers were exercised directly, compiled with `tsc` and run under node
+rather than reimplemented: `durationParts` on the sample uptime, on zero, on
+sub-second, on unit boundaries, on a value that truncates to two units, and on
+negative, `NaN` and `Infinity`; `offsetReading` on the exponent-form value
+from the sample response and on the millisecond and second scales;
+`fanDutyPercent` on the board's real table at four steps and on every one of
+the eleven ways it must refuse. All pass. `versionLabel` and `eepromLabel`
+were re-run unchanged.
+
+Every `t("…")` key literal used anywhere in `src/` — 196 of them — resolves
+in `en.ts`, and all six locale files carry **exactly the same 215 keys**,
+up from 157. That is a script over the tree, not a reading. It catches
+literal keys only: the duration and offset unit keys are selected through a
+`Record` typed over a closed union, so the compiler covers the arms and the
+locale check covers their presence.
+
+The hand-rolled font pipeline is untouched, and measured rather than assumed:
+
 | assertion | before | after |
 |---|---|---|
 | `@font-face` rules in `dist/` | 6 | **6** |
@@ -657,6 +974,63 @@ For the firmware image the number that matters is the tarball: **+89,520 B**.
 The slot occupancy that decision was weighed against — roughly 78 % to
 78.75 % of a slot that fails at 90 % — is a figure from the firmware build,
 not from anything measured here.
+
+The two logo SVGs are byte-identical as well, checked by hashing the contents
+and not only by comparing the content-hashed filenames. `index.html` is the
+same 1,973 bytes and differs only in the hashes it points at.
+
+| | `hive` | with the board panels |
+|---|---|---|
+| total `dist/` | 1,101,301 B, 32 files | **1,136,863 B, 34 files** |
+| JS | 849,499 B (21 files) | 884,600 B (23 files) |
+| CSS | 48,472 B | 48,933 B |
+| fonts | 179,976 B (6 `.woff2`) | 179,976 B (6 `.woff2`) |
+| SVG | 21,355 B (2 logos) | 21,355 B |
+| `index.html` | 1,973 B | 1,973 B |
+| release tarball | 465,624 B | **477,060 B** |
+
+**+35,562 B, +3.23 %.** 35,101 B of it is JS and 461 B is CSS. The JS is four
+panels plus 348 new translation strings — 58 keys in each of six locales —
+which all ship in the main chunk because `src/locale/` is imported eagerly by
+`i18n.ts`.
+
+**Two new chunks, and they are not new code.** `dist/` goes from 32 files to
+34 because rolldown hoisted two modules that are now shared across entries:
+the `TriangleAlert` icon, previously used only inside the Info chunk and now
+also by the firmware panel, and the duration hook, used by the Info and Nodes
+chunks. Both tarball figures were taken with the same fixed `mtime`, so they
+are comparable to each other rather than to the numbers in earlier sections.
+
+### What these four panels leave unverified
+
+The same shape as everything else here, and worth being exact about because
+these are the largest additions in the fork so far.
+
+- **None of the four has parsed a response**, live or recorded. The four
+  shapes were given as exact and are merged in the daemon, which is a stronger
+  starting point than the switch and thermal panels had — but "the shape is
+  exact" and "this code parsed it" are different claims and only the first one
+  is true.
+- **No rendered check.** Not in a browser, not in a snapshot. The alert box
+  above the slot rows, the memory bar inside a `TableItem`, how a node's
+  liveness line wraps on a phone, whether the duty under `4 of 6` crowds the
+  slider: all of it is build-output reasoning.
+- **The wire is still not typed at runtime.** The interfaces describe what
+  bmcd is documented to send. Missing keys are normalised and non-finite
+  numbers are checked at every render site, but a *renamed* field would render
+  as an absent one rather than fail loudly.
+- **The staleness marker has never fired**, and neither has the staged-update
+  alert, the `present: false` NAND or memory state, a non-zero bad-block
+  count, or an unsynchronised clock. Every one of those is a branch written
+  from a description.
+- **The five-minute clock tolerance is a judgement**, not a measurement. It
+  was chosen because the values it must not swallow are hours or days out; no
+  browser-to-board skew has been measured on this hardware.
+- **`last_promotion.timestamp` is shown in the board's timezone**, whatever
+  that is, with no conversion. Rendering it verbatim is deliberate; it does
+  mean a reader has to know what `UTC` in that string implies.
+- **The five non-English locales were written without a native reviewer**, as
+  in every previous pass.
 
 ## Dependencies
 
