@@ -22,6 +22,11 @@ export default defineConfig({
         target,
         changeOrigin: false,
         secure: false,
+        // The serial console is a WebSocket under /api, and without this the
+        // dev server answers its handshake itself with a 404 instead of
+        // proxying it. Dev only; the BMC serves the UI and the daemon from
+        // one origin, so nothing proxies anything in production.
+        ws: true,
       },
     },
   },
