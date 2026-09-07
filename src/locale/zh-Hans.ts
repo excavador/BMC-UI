@@ -91,7 +91,6 @@ const translations = {
     networkInterfaces: "网络接口",
     resetNetworkButton: "重置网络",
     resetNetworkSuccess: "网络重置成功。",
-    resetNetworkFailed: "网络重置失败。",
     switchPorts: "交换机端口",
     switchNodePorts: "节点端口",
     switchUplinkPorts: "上行端口",

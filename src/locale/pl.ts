@@ -93,7 +93,6 @@ const translations = {
     networkInterfaces: "Interfejsy sieciowe",
     resetNetworkButton: "Resetuj sieć",
     resetNetworkSuccess: "Reset sieci powiódł się.",
-    resetNetworkFailed: "Reset sieci nie powiódł się.",
     switchPorts: "Porty przełącznika",
     switchNodePorts: "Porty węzłów",
     switchUplinkPorts: "Porty uplink",

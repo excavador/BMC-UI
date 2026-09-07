@@ -93,7 +93,6 @@ const translations = {
     networkInterfaces: "Interfaces de Red",
     resetNetworkButton: "Restablecer Red",
     resetNetworkSuccess: "Restablecimiento de red exitoso.",
-    resetNetworkFailed: "Restablecimiento de red fallido.",
     switchPorts: "Puertos del switch",
     switchNodePorts: "Puertos de nodo",
     switchUplinkPorts: "Puertos de enlace ascendente",
