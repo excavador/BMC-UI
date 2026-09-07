@@ -1,6 +1,5 @@
 import { useTranslation } from "react-i18next";
 
-import { useBmcBootReference, useBoardNow } from "@/hooks/use-bmc-boot";
 import { useDurationLabel } from "@/hooks/use-duration";
 import { type NodeInfoResponse, useSwitchPortsQuery } from "@/lib/api/get";
 
@@ -33,18 +32,16 @@ export default function NodeLiveness({
   const { t } = useTranslation();
   const { data: ports } = useSwitchPortsQuery();
   const durationLabel = useDurationLabel();
-  const { predatesBoot } = useBmcBootReference();
-  const now = useBoardNow();
 
   const port = ports?.find((candidate) => candidate.name === `node${nodeId}`);
 
-  // Elapsed as of the last time the board was read, against the browser's
-  // clock. The stamp is the board's, so the two clocks have to agree for the
-  // duration to mean anything; the Info page's clock row is where that gets
-  // checked, and this page says so under the list.
-  const elapsed = powerOnTime === null ? null : now - powerOnTime;
-  const uptime = elapsed === null ? null : durationLabel(elapsed);
-  const stale = predatesBoot(powerOnTime);
+  // `power_on_time` is ALREADY elapsed seconds, not an epoch stamp. The daemon
+  // stores a wall-clock instant and hands out the difference, so subtracting it
+  // from the current time again dated every module to 1969: the page read
+  // "powered on 20703 d 2 h ago" against a module genuinely up for 19 hours.
+  // Verified against the board -- node 1 reported 68891 while its own
+  // /proc/uptime said 68865.
+  const uptime = powerOnTime === null ? null : durationLabel(powerOnTime);
 
   return (
     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
@@ -57,19 +54,7 @@ export default function NodeLiveness({
       )}
 
       {uptime !== null && (
-        <span className={stale ? "opacity-60" : undefined}>
-          {t("nodes.powerOnFor", { duration: uptime })}
-        </span>
-      )}
-
-      {/* The quiet marker. Amber and in words, beside the value rather than
-          instead of it: the stamp is data the board really sent, and hiding it
-          would be its own kind of lie. What it is not is evidence that this
-          module has been up that long, and this says exactly that much. */}
-      {stale && (
-        <span className="text-amber-600 dark:text-amber-500">
-          {t("nodes.powerOnBeforeBmcBoot")}
-        </span>
+        <span>{t("nodes.powerOnFor", { duration: uptime })}</span>
       )}
 
       {port && !port.present && (
@@ -101,36 +86,33 @@ export default function NodeLiveness({
 /**
  * What the power-on times on this page are, and are not.
  *
- * `power_on_time` is a stored wall-clock stamp, not a probe, and on this board
- * it is wrong for three nodes out of four: a firmware bug fixed only in the
- * current build left the previous boot's value in place, and it will stay
- * there until each module is next genuinely power-cycled. Rendering those
- * durations as fact would put four confident numbers on screen of which one is
- * true.
+ * `power_on_time` is a value the daemon derives from a stored instant, not a
+ * probe of the module, and on this board it is wrong for three nodes out of
+ * four: a firmware bug fixed only in the current build left an earlier boot's
+ * value in place, and it stays there until each module is next genuinely
+ * power-cycled.
  *
- * The alternative considered and rejected was to compare each node against its
- * siblings and mark whichever disagrees. That marks the wrong node as often as
- * the right one: a cluster where three modules were rebooted this morning and
- * one has been up for a month is completely normal, and the long-running one
- * is not the suspect. The BMC's own boot time is used instead, because it is a
- * fact about causality rather than about distribution.
+ * There is deliberately no marker for that. The obvious test -- flag a value
+ * older than the BMC's own boot -- is built on a premise this firmware makes
+ * false: a BMC reboot does NOT power-cycle the modules. That is the whole
+ * point of the preserve-boot-state patch, measured across four flashes with
+ * every module's uptime climbing straight through. So a stamp surviving a BMC
+ * reboot is the system working, and marking it fired on all four nodes after
+ * every reboot -- confidently wrong, which is worse than silent.
  *
- * The second sentence appears only when something is actually marked, so a
- * board where every stamp is plausible does not carry a paragraph about a
- * marker nobody can see.
+ * Comparing siblings was rejected too: three modules rebooted this morning and
+ * one up for a month is a normal cluster, and the long-running one is not the
+ * suspect. Nothing this interface can see distinguishes a stale stamp from a
+ * true one, so it says what the board said and says what that means.
  */
 export function NodeLivenessNotes({ nodes }: { nodes: NodeInfoResponse[] }) {
   const { t } = useTranslation();
-  const { predatesBoot } = useBmcBootReference();
 
   if (!nodes.some((node) => node.power_on_time !== null)) return null;
 
   return (
     <div className="mt-6 space-y-2 text-sm opacity-60">
       <p>{t("nodes.powerOnTimeNote")}</p>
-      {nodes.some((node) => predatesBoot(node.power_on_time)) && (
-        <p>{t("nodes.powerOnTimeStaleNote")}</p>
-      )}
     </div>
   );
 }

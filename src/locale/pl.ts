@@ -138,15 +138,12 @@ const translations = {
     powerOnFor: "włączony {{duration}} temu",
     powerOff: "wyłączony",
     powerOnUnreadable: "czas włączenia nieczytelny",
-    powerOnBeforeBmcBoot: "znacznik sprzed tego uruchomienia BMC",
     linkUp: "łącze aktywne",
     linkDown: "brak łącza",
     linkAbsent: "port przełącznika nie wykryty",
     linkSpeed: "{{speed}} Mb/s",
     powerOnTimeNote:
       "Czas włączenia to znacznik, który BMC zapisuje przy włączaniu węzła, a nie odpytanie działającego modułu, i jest mierzony względem zegara tej przeglądarki.",
-    powerOnTimeStaleNote:
-      "Oznaczony węzeł zgłasza znacznik sprzed ostatniego uruchomienia tego BMC. Restart BMC odcina zasilanie każdego węzła, więc ten znacznik przetrwał cykl zasilania, który powinien go zastąpić — błąd firmware naprawiony dopiero w bieżącej wersji zostawia starą wartość, dopóki moduł nie zostanie następnym razem naprawdę odłączony od zasilania. Traktuj te czasy jako niewiarygodne, a nie jako długi czas pracy.",
   },
   console: {
     header: "Konsola szeregowa modułu obliczeniowego",
