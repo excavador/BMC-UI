@@ -20,8 +20,9 @@ import { forwardRef } from "react";
 
 import { cn } from "@/lib/utils";
 
-interface SelectTriggerProps
-  extends React.ComponentPropsWithoutRef<typeof Trigger> {
+interface SelectTriggerProps extends React.ComponentPropsWithoutRef<
+  typeof Trigger
+> {
   label: string;
 }
 
