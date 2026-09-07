@@ -39,6 +39,15 @@ and a manual set to maximum that returned `{"result":"ok"}`, read back as 6 of
 observations, and they are why the card was rewritten. The card that reports
 them has still never run on the board.
 
+The serial console is the fourth case, and the furthest from the board of
+any of them. **It has never been connected to a live board** -- not to a
+Turing Pi, not to any running bmcd, not to any recorded session. It has never
+received a byte of UART output and no module has ever received a keystroke
+from it. One part of it *was* exercised: the WebSocket handshake, against a
+throwaway server on `127.0.0.1` that implements the documented subprotocol
+selection, because that handshake is what a first attempt at this page died
+on. Everything from the first byte onwards is written to a description.
+
 That the doubled `v` needed fixing twice is the argument for reading this
 section literally. The first pass fixed it where it had been noticed, four
 rows on one page, and left the header printing `daemon vv2.2.0-unstable-hive.7`
@@ -57,6 +66,7 @@ a real check and it is not the same as having looked.
 | **The board temperature is on the Info page** | Until this week no Turing Pi 2 could measure its own temperature: the SoC thermal sensor was missing from every device tree, so the fan ran flat out with nothing to regulate against. The sensor and a fan curve exist now and the SoC reads about 52 °C — and the interface showed a fan percentage and no temperature anywhere. A reader looks for it beside the fan, because the fan is what it drives | A `type=thermal` query feeding the Fan Control card, [described below](#the-temperature-and-the-fan-in-detail). Built and linted clean, keys in all six locales, the empty-list and unreadable-sensor paths written before the happy path — but **the card has never received a real response**: the endpoint is being implemented in parallel with this |
 | **The fan reads `4 of 6`, not `67%`** | The percentage was wrong twice over. It was `Math.round(state / max_state * 100)` — the step *index* as a fraction — so step 4 of 6 printed as 67 %; and the steps are not evenly spaced, so the real duty at step 4 is 102/254, about 40 %. The number on screen matched neither, and its continuous look invited the reader to believe a seven-position fan could sit anywhere between them | A segmented bar, one filled segment per step, with the step in words beside it. The duty cycle is deliberately **not** shown: the levels table lives in the device tree and no endpoint reports it, so a percentage here would be one board's device tree hardcoded into the interface and presented as a measurement |
 | **Automatic fan control is visible** | Firmware hive.8 added a thermal cooling-map, so `step_wise` re-asserts the fan from the temperature every polling interval. Setting the fan through the existing API returns success, reads back correctly, and is silently undone about eight seconds later. A control that reports success and does nothing is worse than no control | The slider is **kept and still works** — on firmware without a cooling-map it is the only fan control there is. What changed is that the card stops hiding the governor: an `automatic` marker on the heading, a standing note that a setting here is an override, and — when a poll that finished *after* a commit disagrees with it — a warning naming the step the board went back to. The slider is what was asked for; the segments are what the fan is doing |
+| **A serial console for each module** | This interface can power a module on, flash an image to it and reboot it, and has never shown a line of what it printed. A module that fails before the network comes up — a bad image, the wrong device tree, a panic three seconds in — is invisible from here, and the only recourse is the serial header on the board itself | A new lazy route on `/console` carrying a real terminal, [described below](#the-serial-console-in-detail). Built and linted clean, keys in all six locales, and the handshake the previous attempt at this page died on exercised against a local stand-in — but **the console has never been connected to a live board** |
 | **Fonts: 669 KB → 176 KB** | Fonts were 45 % of the bundle on a board with 128 MB of flash, and most of them could not be drawn on any screen this interface renders | See below |
 | **A release pipeline** | The firmware pins the UI tarball by sha256 and needs somewhere to fetch it from that is not a dormant upstream | Packaging dry-run against a real build: the tarball unpacks to `dist/`, `sha256sum -c SHA256SUMS` passes, two runs are byte-identical. Nothing has been tagged |
 | **`LICENSE` ships inside the tarball** | Upstream's asset omits it while our `.mk` declares `BMC_UI_LICENSE_FILES = LICENSE`, so Buildroot has been looking for a file that was never there. We redistribute a GPL-2.0 work on a device | Buildroot extracts with `--strip-components=1`, so `dist/LICENSE` is exactly where that variable resolves |
@@ -433,6 +443,220 @@ utilities the segmented bar and the amber alert pull in. Both tarball figures
 were taken here with the same fixed `mtime`, so they are comparable to each
 other; neither is comparable to the figure recorded in the previous section,
 which used a different one.
+
+## The serial console, in detail
+
+`/console` is a new tab and the first thing in this interface that shows what
+a compute module is saying. Everything else here reads the BMC.
+
+### The handshake, which is where the previous attempt died
+
+This page was written once before and correctly abandoned: a browser cannot
+put an `Authorization` header on a WebSocket handshake, and the daemon had no
+other way to authenticate one. That is fixed in bmcd, and the fix is a
+fallback that applies only when no `Authorization` header is present — which
+is the browser's situation by construction. The session token is offered as a
+second subprotocol instead.
+
+```js
+new WebSocket(`wss://${host}/api/bmc/serial/ws?node=${n}`,
+              ["bmcd.serial.v1", `bmcd.bearer.${token}`]);
+```
+
+Three things about that list matter and none of them is guessable from
+reading it:
+
+- **`node` is 0-indexed.** Modules 1 to 4 are `node=0` to `node=3`, the same
+  convention `type=uart` and the power endpoint already use.
+- **The credential goes last.** The server selects the first offered entry
+  that is not a `bmcd.bearer.` one.
+- **A plain name has to be offered at all.** A list with nothing selectable
+  in it leaves the server no subprotocol to name in its response, and a
+  browser rejects a handshake that selects nothing. Offering only the
+  credential does not work, and does not work as a close with no reason.
+
+The token is the `id` from `POST /api/bmc/authenticate`, verbatim, 64
+characters of `[A-Za-z0-9]` — the same value `AuthContext` already holds for
+the `Authorization` header on every other call. It is checked against that
+character class before the socket is constructed, because a subprotocol name
+is an RFC 6455 token: a stray character makes `new WebSocket(...)` *throw*
+rather than fail to connect, and a constructor that throws inside an effect
+takes the page down instead of showing a state.
+
+### The bytes
+
+Server to client is binary frames of raw UART, untranscoded. They go to the
+terminal as a `Uint8Array` rather than a decoded string, because xterm's
+decoder carries state across writes: a multi-byte sequence split across two
+frames still comes out as one character. `binaryType` is set to
+`arraybuffer` rather than left at the default `blob` for a related reason —
+a Blob has to be read asynchronously, and two reads can finish out of order.
+
+Client to server is whatever the terminal produced, sent verbatim with
+nothing appended. That is the entire reason this is a WebSocket: Ctrl-C is
+one byte, tab completion is one byte, an arrow key is three, and a writer
+that appends CRLF cannot send any of them.
+
+The daemon pings every five seconds and closes after thirty without a
+response. Browsers answer pings themselves, so there is no keepalive in this
+code and nothing in it to get wrong.
+
+### What is on the page
+
+- **A module selector**, four entries, the same `Select` the USB and Flash
+  Node tabs use.
+- **The reader task's state** for the selected module, from
+  `POST /api/bmc/serial/status`, with a line saying what it is not. It
+  reports whether bmcd's own UART reader is alive. A module that is powered
+  off, one that is booted and silent, and one mid-boot all have a reader in
+  the same state, so it is not module health and is not labelled as such. It
+  is worth showing because a `Stopped` reader explains an empty terminal
+  that no amount of looking at the module would.
+- **The connection state**, at all times: connecting, connected, closed, not
+  connected. A terminal that has gone quiet and a socket that closed under it
+  look identical on screen, so the state is never left to be inferred from
+  the absence of output. `closed` and `failed` are kept apart — one is a
+  connection that ended, the other one that never opened — and the close
+  code, and any reason, is printed beside it.
+- **Reconnect**, which rebuilds the socket without reloading the page and
+  keeps the scrollback, and **Clear**, which empties it.
+- **The REST fallback**, in two lines, described below.
+
+One terminal exists at a time and it is mounted with `key={node}`. Selecting
+another module unmounts the panel, which disposes the terminal and closes the
+socket together: nothing from the old module can land in the new one's
+buffer, and nothing is left running behind the tab.
+
+The route is lazy, by the repo's `.lazy.tsx` convention, so all 339 KB of
+terminal is fetched when `/console` is opened and never by the five other
+tabs.
+
+### The REST endpoint it does not use
+
+`type=uart` has been in the API the whole time, and the page says so, because
+somebody debugging with `curl` should not have to find that out from the
+source:
+
+- `GET /api/bmc?opt=get&type=uart&node=<0..3>` returns the node's whole
+  16 KiB circular buffer.
+- `POST /api/bmc?opt=set&type=uart&node=<0..3>&cmd=<text>` writes one line.
+
+The writer **always appends CRLF**, which is what makes it a different tool
+rather than a worse one: it cannot send a bare control character. No Ctrl-C,
+no tab completion, no arrow keys, nothing that needs a single key pressed at
+a boot prompt. From a shell script it is the right thing; at a `u-boot`
+prompt it is not.
+
+### What the console leaves unverified
+
+**The console has never been connected to a live board.** Not to any Turing
+Pi, not to any running bmcd, not to a recorded session. It has never received
+a byte of real UART output. What was checked:
+
+- `tsc -b` and `eslint .` clean, and the build emits the route as its own
+  chunk with xterm inside it — `grep` finds no mention of xterm in the main
+  bundle or in any other chunk.
+- Every `t("…")` key used anywhere in `src/` — 179 of them — resolves in
+  `en.ts`, and all 185 keys in `en.ts` exist in all six locale files with no
+  extras and none missing. That is a script over the tree, not a reading.
+- **The handshake was exercised**, which is the one part of this that
+  defeated the previous attempt. A throwaway server on `127.0.0.1`
+  implementing the documented selection rule was driven with the same
+  subprotocol list this code builds, using Node's own WebSocket client. It
+  showed that a 64-character alphanumeric token survives the client's
+  subprotocol validation and arrives in `Sec-WebSocket-Protocol` verbatim and
+  second; that a server selecting the first non-bearer entry yields
+  `socket.protocol === "bmcd.serial.v1"` and that a binary frame arrives as
+  an `ArrayBuffer`; and that a server selecting *nothing* makes the client
+  refuse to open. That last one is the failure the contract warns about, and
+  it is now something observed rather than something believed.
+
+What was not:
+
+- **No rendered check.** Not in a browser, not in a snapshot. The terminal's
+  size, how a 22-row terminal and a select and two buttons wrap on a phone,
+  whether the dark theme reads: all of it is build-output reasoning.
+- **xterm has never been mounted.** `Terminal.open`, the fit addon, the
+  resize observer and the disposal path have not run anywhere. The leak this
+  is written to avoid — a terminal or a socket outliving a module switch —
+  has been argued, not demonstrated.
+- **No escape sequence has been rendered.** Boot output being full of them is
+  the reason for taking a 339 KB dependency, and not one has been drawn.
+- **`POST /api/bmc/serial/status` has never answered.** Three states are
+  handled by name and anything else prints verbatim, which is a guess at a
+  response shape rather than a parse of one.
+- **No keystroke has reached a module.** That Ctrl-C leaves as one byte is a
+  property of xterm's `onData` and of a socket that appends nothing; both
+  halves are read from documentation, not watched.
+- **The client's own scheme is derived from the page's.** `wss:` on the
+  board, `ws:` behind `vite dev`. A deployment that served this page over
+  plain HTTP while expecting `wss:` would fail, and nothing here would say so
+  usefully.
+- **The five non-English locales were written without a native reviewer**, as
+  before.
+
+### Serial console pass: proof it still builds
+
+The same battery, from an empty `node_modules`: `devbox run -- npm ci && npm
+run lint && npm run build` clean, `npm audit` **zero** with the two new
+dependencies in the tree, `eslint .` back to the same 3 warnings and 0
+errors. `git status` clean after a build — but **`routeTree.gen.ts` does
+move this time**, because this is the first change here that adds a route; it
+is regenerated and committed. **Two consecutive builds are byte-identical
+across all 35 files**, which is the assertion the sha256-pinned tarball rests
+on.
+
+The hand-rolled font pipeline is untouched, measured rather than assumed:
+
+| assertion | before | after |
+|---|---|---|
+| `@font-face` rules in `dist/` | 6 | **6** |
+| `url()` references | 6 | **6** |
+| `.woff2` files shipped | 6 | **6** |
+| bare `.woff` references | 0 | **0** |
+| every `url()` target present in `dist/` | yes | **yes** |
+| the six `.woff2` files, byte for byte | — | **all six unchanged** |
+
+The two logo SVGs are byte-identical as well. `index.html` grows by 77 bytes,
+and the diff is one added `modulepreload` line; the console route is not
+preloaded, which is the point of it being lazy.
+
+| | `hive` | with the console |
+|---|---|---|
+| total `dist/` | 1,101,301 B, 32 files | **1,456,302 B, 35 files** |
+| JS | 849,499 B (21 files) | 1,199,692 B (23 files) |
+| CSS | 48,472 B (1 file) | 53,203 B (2 files) |
+| fonts | 179,976 B (6 `.woff2`) | 179,976 B (6 `.woff2`) |
+| SVG | 21,355 B (2 logos) | 21,355 B |
+| `index.html` | 1,973 B | 2,050 B |
+| release tarball | 465,628 B | **555,148 B** |
+
+**+355,001 B, +32.2 %** — by far the largest change this fork has made, and
+worth breaking down, because most of it never reaches a browser that does not
+open this tab:
+
+| chunk | bytes | gzipped |
+|---|---|---|
+| `console.lazy-*.js` — the route, xterm, the fit addon | **338,695** | **84,524** |
+| `console-*.css` — xterm's stylesheet | **3,939** | **1,029** |
+| main chunk `index-*.js` | 447,554 → 458,705 (**+11,151**) | 144.0 → 148.2 kB |
+| `index-*.css` | 48,472 → 49,264 (**+792**) | 8.94 → 9.05 kB |
+
+The two console chunks are 342,634 B of the 355,001 and are fetched only when
+`/console` is opened. The main chunk's 11 KB is the twenty-eight new strings
+across six locales: `src/locale/` is imported eagerly by `i18n.ts`, so
+translations ship in the main bundle no matter which route uses them.
+
+One more line in the build listing moved, and it is not weight: react-dom used
+to be merged into `set-*.js` (79,790 B) and is now emitted as its own chunk
+(70,588 B) with `set-*.js` down to 9,204 B. The two together are 79,792 B,
+two bytes more than the single chunk they replace — rolldown re-split them
+because a third route entry now shares the graph.
+
+For the firmware image the number that matters is the tarball: **+89,520 B**.
+The slot occupancy that decision was weighed against — roughly 78 % to
+78.75 % of a slot that fails at 90 % — is a figure from the firmware build,
+not from anything measured here.
 
 ## Dependencies
 
