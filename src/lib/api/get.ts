@@ -86,6 +86,54 @@ interface CoolingDevice {
   speed: number;
 }
 
+/**
+ * One thermal sensor, as `type=thermal` reports it.
+ *
+ * Until this week no Turing Pi 2 could measure its own temperature at all:
+ * the SoC thermal sensor was missing from every device tree, so the fan ran
+ * flat out with nothing to regulate against. `bmc-thermal` is that sensor,
+ * now that it exists.
+ *
+ * `present` is the daemon's answer to "did the read succeed". It is false
+ * when the zone is declared but unreadable, and `temperature_c` means
+ * nothing in that case -- which is why it is checked before the number is
+ * ever formatted. A board that cannot measure must not be shown as 0 degrees.
+ */
+export interface ThermalSensor {
+  name: string;
+  /** Degrees Celsius, one decimal. Meaningless unless `present`. */
+  temperature_c: number;
+  present: boolean;
+}
+
+/**
+ * One cooling device as the kernel's thermal layer sees it.
+ *
+ * The same fan `type=cooling` exposes, reported the other way round: as the
+ * discrete step the thermal governor has it at, out of the steps the device
+ * tree declares. `type=cooling` reports the setpoint somebody wrote;
+ * `cur_state` here is where the fan actually is, which on firmware carrying
+ * a thermal cooling-map is whatever the governor last decided rather than
+ * whatever was last written.
+ */
+export interface ThermalCooling {
+  name: string;
+  cur_state: number;
+  max_state: number;
+  present: boolean;
+}
+
+/**
+ * Both lists are allowed to be empty, and empty is not an error: it is the
+ * correct answer from any board or firmware that predates the thermal
+ * sensor. It means "cannot measure", which the interface has to render as
+ * unavailable rather than as a reading of zero.
+ */
+export interface ThermalResponse {
+  sensors: ThermalSensor[];
+  cooling: ThermalCooling[];
+}
+
 export interface NodeInfoResponse {
   module_name: string | null;
   name: string | null;
@@ -236,6 +284,51 @@ export function useCoolingDevicesQuery() {
       });
       return response.data.response[0].result;
     },
+  });
+}
+
+/**
+ * Board temperature and the cooling devices the kernel drives from it.
+ *
+ * `useQuery`, not `useSuspenseQuery`, for the same reason the switch panel
+ * is one: `type=thermal` exists only in our bmcd fork, and a suspense query
+ * that throws takes the whole Info route to its `errorComponent` -- storage,
+ * fans, addresses and the reboot buttons vanishing because a temperature was
+ * unavailable. The card degrades to one line of prose instead.
+ *
+ * Polled at five seconds, because a temperature read once when the tab was
+ * opened is not a temperature. It is also what makes the fan's step honest:
+ * the kernel governor re-asserts the fan from the temperature on its own
+ * schedule, so a manual setting is undone within seconds, and a card that
+ * only read the fan at mount would show the setting rather than the fan.
+ *
+ * Missing lists are normalised to empty ones. A daemon that answers this
+ * endpoint at all is ours, but "answers it" and "sends both keys" are
+ * different promises, and `undefined.length` is not a useful failure.
+ */
+export function useThermalQuery() {
+  const api = useAxiosWithAuth();
+
+  return useQuery({
+    queryKey: ["thermal"],
+    queryFn: async () => {
+      const response = await api.get<APIResponse<ThermalResponse>>("/bmc", {
+        params: {
+          opt: "get",
+          type: "thermal",
+        },
+      });
+      const result = response.data.response[0].result;
+      return {
+        sensors: result.sensors ?? [],
+        cooling: result.cooling ?? [],
+      };
+    },
+    // Stop polling once it has failed: an older daemon answers the same way
+    // in five seconds' time, and a card reporting its own absence has no
+    // reason to keep asking.
+    refetchInterval: (query) => (query.state.error ? false : 5000),
+    retry: false,
   });
 }
 
