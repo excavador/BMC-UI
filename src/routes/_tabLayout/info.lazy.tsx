@@ -3,6 +3,7 @@ import { filesize } from "filesize";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import BoardHealth from "@/components/BoardHealth";
 import FanControl from "@/components/FanControl";
 import RebootModal from "@/components/RebootModal";
 import InfoSkeleton from "@/components/skeletons/info";
@@ -184,6 +185,8 @@ export function Info() {
           </Button>
         </div>
       </div>
+
+      <BoardHealth />
 
       <FanControl />
 
