@@ -45,6 +45,25 @@ const translations = {
     rebootFailed: "Failed to reboot BMC",
     reloadDaemonSuccess: "The BMC daemon is reloading...",
     reloadDaemonFailed: "Failed to reload BMC daemon",
+    switchPorts: "Switch Ports",
+    switchNodePorts: "Node ports",
+    switchUplinkPorts: "Uplink ports",
+    switchOtherPorts: "Other ports",
+    switchPortUp: "up",
+    switchPortDown: "down",
+    switchPortAbsent: "not detected",
+    switchPortSpeed: "{{speed}} Mb/s",
+    switchPortDuplexFull: "full duplex",
+    switchPortDuplexHalf: "half duplex",
+    switchPortTraffic: "rx {{rx}} · tx {{tx}}",
+    switchPortErrors: "errors: {{rx}} rx / {{tx}} tx",
+    switchNotProbed: "Switch ports not detected",
+    switchNotProbedDescription:
+      "The BMC's switch driver did not probe the ports marked below. A compute module behind an unprobed node port has no network at all, while the BMC itself stays reachable, so nothing else on this page will look wrong.",
+    switchNoPorts:
+      "The BMC reported no switch ports at all. The switch driver is not running, which cuts every compute module off from the network while the BMC itself stays reachable.",
+    switchPortsUnavailable:
+      "This BMC daemon does not report switch port status.",
   },
   nodes: {
     header: "Control the power supply of connected nodes",

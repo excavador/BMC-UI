@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import RebootModal from "@/components/RebootModal";
 import InfoSkeleton from "@/components/skeletons/info";
+import SwitchPorts from "@/components/SwitchPorts";
 import TableItem from "@/components/TableItem";
 import TabView from "@/components/TabView";
 import { Button } from "@/components/ui/button";
@@ -268,6 +269,8 @@ export function Info() {
           </Button>
         </div>
       </div>
+
+      <SwitchPorts />
 
       <div>
         <div className="mb-6 text-lg font-bold">{t("info.bmc")}</div>

@@ -48,6 +48,25 @@ const translations = {
     rebootFailed: "Nie udało się ponownie uruchomić BMC",
     reloadDaemonSuccess: "Demon BMC jest przeładowywany...",
     reloadDaemonFailed: "Nie udało się przeładować demona BMC",
+    switchPorts: "Porty przełącznika",
+    switchNodePorts: "Porty węzłów",
+    switchUplinkPorts: "Porty uplink",
+    switchOtherPorts: "Pozostałe porty",
+    switchPortUp: "połączony",
+    switchPortDown: "rozłączony",
+    switchPortAbsent: "nie wykryto",
+    switchPortSpeed: "{{speed}} Mb/s",
+    switchPortDuplexFull: "pełny dupleks",
+    switchPortDuplexHalf: "półdupleks",
+    switchPortTraffic: "rx {{rx}} · tx {{tx}}",
+    switchPortErrors: "błędy: {{rx}} rx / {{tx}} tx",
+    switchNotProbed: "Nie wykryto portów przełącznika",
+    switchNotProbedDescription:
+      "Sterownik przełącznika BMC nie wykrył portów oznaczonych poniżej. Moduł obliczeniowy za niewykrytym portem węzła nie ma żadnej sieci, podczas gdy sam BMC pozostaje osiągalny, więc nic innego na tej stronie nie będzie wyglądać źle.",
+    switchNoPorts:
+      "BMC nie zgłosił żadnych portów przełącznika. Sterownik przełącznika nie działa, co odcina wszystkie moduły obliczeniowe od sieci, podczas gdy sam BMC pozostaje osiągalny.",
+    switchPortsUnavailable:
+      "Ten demon BMC nie zgłasza stanu portów przełącznika.",
   },
   nodes: {
     header: "Kontroluj zasilanie podłączonych węzłów",

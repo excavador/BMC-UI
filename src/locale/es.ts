@@ -47,6 +47,25 @@ const translations = {
     rebootFailed: "Error al reiniciar BMC",
     reloadDaemonSuccess: "El daemon BMC se está recargando...",
     reloadDaemonFailed: "Error al recargar el daemon BMC",
+    switchPorts: "Puertos del switch",
+    switchNodePorts: "Puertos de nodo",
+    switchUplinkPorts: "Puertos de enlace ascendente",
+    switchOtherPorts: "Otros puertos",
+    switchPortUp: "conectado",
+    switchPortDown: "desconectado",
+    switchPortAbsent: "no detectado",
+    switchPortSpeed: "{{speed}} Mb/s",
+    switchPortDuplexFull: "dúplex completo",
+    switchPortDuplexHalf: "semidúplex",
+    switchPortTraffic: "rx {{rx}} · tx {{tx}}",
+    switchPortErrors: "errores: {{rx}} rx / {{tx}} tx",
+    switchNotProbed: "Puertos del switch no detectados",
+    switchNotProbedDescription:
+      "El controlador del switch del BMC no detectó los puertos marcados abajo. Un módulo de cómputo detrás de un puerto de nodo no detectado no tiene red alguna, mientras que el BMC sigue siendo accesible, por lo que nada más en esta página parecerá incorrecto.",
+    switchNoPorts:
+      "El BMC no informó ningún puerto del switch. El controlador del switch no está funcionando, lo que deja a todos los módulos de cómputo sin red mientras el BMC sigue siendo accesible.",
+    switchPortsUnavailable:
+      "Este daemon del BMC no informa el estado de los puertos del switch.",
   },
   nodes: {
     header: "Controlar la fuente de alimentación de los nodos conectados",
