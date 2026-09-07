@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import BasicInfoSkeleton from "@/components/skeletons/basic-info";
 import { useAboutTabData } from "@/lib/api/get";
+import { versionLabel } from "@/lib/format";
 
 function BasicInfoContent() {
   const { t } = useTranslation();
@@ -22,7 +23,9 @@ function BasicInfoContent() {
           <span className="text-sm font-semibold lowercase opacity-60">
             daemon
           </span>
-          <span className="ml-2 text-sm font-semibold">v{data.version}</span>
+          <span className="ml-2 text-sm font-semibold">
+            {versionLabel(data.version)}
+          </span>
         </div>
       </div>
     </div>
