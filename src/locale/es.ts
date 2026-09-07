@@ -66,6 +66,20 @@ const translations = {
       "El BMC no informó ningún puerto del switch. El controlador del switch no está funcionando, lo que deja a todos los módulos de cómputo sin red mientras el BMC sigue siendo accesible.",
     switchPortsUnavailable:
       "Este daemon del BMC no informa el estado de los puertos del switch.",
+    thermalCelsius: "{{value}} °C",
+    thermalAbsent: "no detectado",
+    thermalUnavailable:
+      "Este daemon del BMC no informa la temperatura de la placa.",
+    thermalNoSensors:
+      "Esta placa no informa ningún sensor térmico, así que no hay temperatura que leer. El ventilador funciona al último valor establecido, sin nada que regular.",
+    fanAutomatic: "automático",
+    fanStep: "{{cur}} de {{max}}",
+    fanRequested: "ajustado {{value}}",
+    fanGovernorNote:
+      "El kernel regula este ventilador según la temperatura de la placa. Un ajuste aquí es una anulación que el regulador deshace en su siguiente sondeo, unos segundos después.",
+    fanReverted:
+      "La placa restableció {{device}} a {{cur}} de {{max}} después de ajustarlo a {{requested}}.",
+    ariaFanStep: "Nivel de refrigeración del ventilador {{device}}",
   },
   nodes: {
     header: "Controlar la fuente de alimentación de los nodos conectados",

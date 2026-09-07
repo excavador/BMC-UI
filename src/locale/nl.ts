@@ -66,6 +66,19 @@ const translations = {
       "De BMC heeft helemaal geen switchpoorten gerapporteerd. De switchdriver draait niet, waardoor elke computemodule van het netwerk is afgesneden terwijl de BMC zelf bereikbaar blijft.",
     switchPortsUnavailable:
       "Deze BMC-daemon rapporteert geen status van switchpoorten.",
+    thermalCelsius: "{{value}} °C",
+    thermalAbsent: "niet gedetecteerd",
+    thermalUnavailable: "Deze BMC-daemon rapporteert geen boardtemperatuur.",
+    thermalNoSensors:
+      "Dit board rapporteert geen temperatuursensor, dus er is geen temperatuur te lezen. De ventilator draait op de laatst ingestelde waarde, zonder dat er iets geregeld wordt.",
+    fanAutomatic: "automatisch",
+    fanStep: "{{cur}} van {{max}}",
+    fanRequested: "ingesteld {{value}}",
+    fanGovernorNote:
+      "De kernel regelt deze ventilator op basis van de boardtemperatuur. Een instelling hier is een overschrijving die de regelaar bij zijn volgende peiling, enkele seconden later, ongedaan maakt.",
+    fanReverted:
+      "Het board heeft {{device}} teruggezet naar {{cur}} van {{max}} nadat het op {{requested}} was gezet.",
+    ariaFanStep: "Koelstand van ventilator {{device}}",
   },
   nodes: {
     header: "Stroomtoevoer van aangesloten nodes regelen",

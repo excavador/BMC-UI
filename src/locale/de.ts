@@ -67,6 +67,19 @@ const translations = {
       "Das BMC hat überhaupt keine Switch-Ports gemeldet. Der Switch-Treiber läuft nicht, wodurch jedes Compute-Modul vom Netzwerk getrennt ist, während das BMC selbst erreichbar bleibt.",
     switchPortsUnavailable:
       "Dieser BMC-Daemon meldet keinen Status der Switch-Ports.",
+    thermalCelsius: "{{value}} °C",
+    thermalAbsent: "nicht erkannt",
+    thermalUnavailable: "Dieser BMC-Daemon meldet keine Board-Temperatur.",
+    thermalNoSensors:
+      "Dieses Board meldet keinen Temperatursensor, es gibt also keine Temperatur zu lesen. Der Lüfter läuft mit dem zuletzt gesetzten Wert, ohne dass etwas geregelt wird.",
+    fanAutomatic: "automatisch",
+    fanStep: "{{cur}} von {{max}}",
+    fanRequested: "gesetzt {{value}}",
+    fanGovernorNote:
+      "Der Kernel regelt diesen Lüfter anhand der Board-Temperatur. Eine Einstellung hier ist eine Übersteuerung, die der Regler bei seiner nächsten Abfrage wenige Sekunden später wieder aufhebt.",
+    fanReverted:
+      "Das Board hat {{device}} auf {{cur}} von {{max}} zurückgesetzt, nachdem es auf {{requested}} gestellt wurde.",
+    ariaFanStep: "Kühlstufe des Lüfters {{device}}",
   },
   nodes: {
     header: "Stromversorgung der verbundenen Knoten steuern",

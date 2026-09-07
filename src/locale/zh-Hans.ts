@@ -64,6 +64,19 @@ const translations = {
     switchNoPorts:
       "BMC 未报告任何交换机端口。交换机驱动未运行，这会使所有计算模块与网络断开，而 BMC 本身仍可访问。",
     switchPortsUnavailable: "此 BMC 守护进程不报告交换机端口状态。",
+    thermalCelsius: "{{value}} °C",
+    thermalAbsent: "未检测到",
+    thermalUnavailable: "此 BMC 守护进程不报告主板温度。",
+    thermalNoSensors:
+      "此主板未报告任何温度传感器，因此无温度可读。风扇以上次设定的转速运行，没有任何依据可供调节。",
+    fanAutomatic: "自动",
+    fanStep: "{{cur}} / {{max}}",
+    fanRequested: "设定 {{value}}",
+    fanGovernorNote:
+      "内核根据主板温度调节此风扇。这里的设置只是临时覆盖，调节器会在几秒后的下一次轮询时将其撤销。",
+    fanReverted:
+      "在将 {{device}} 设为 {{requested}} 后，主板已将其重置为 {{cur}} / {{max}}。",
+    ariaFanStep: "风扇 {{device}} 的散热档位",
   },
   nodes: {
     header: "控制连接节点的电源",
