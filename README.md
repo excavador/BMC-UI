@@ -20,16 +20,29 @@ this UI has been flashed, so nothing in this fork is verified in a browser
 against a real bmcd. Read the tables as "what was changed and how it was
 checked", not as "what the board does".
 
-The three display bugs behind it *were* observed on hardware, on firmware
-`v2.2.0-unstable-hive.5` — that is where they came from. The fixes have not
-been.
+The display bugs behind it *were* observed on hardware — the first three on
+firmware `v2.2.0-unstable-hive.5`, the rest on `v2.2.0-unstable-hive.7` — and
+that is where they came from. None of the fixes has been. Neither has the
+switch panel, which is the one piece here that displays something no version
+of this interface has shown before: it is written against the documented
+shape of bmcd's `type=network` response and a description of what that board
+currently reports, not against a response this code has parsed.
+
+That the doubled `v` needed fixing twice is the argument for reading this
+section literally. The first pass fixed it where it had been noticed, four
+rows on one page, and left the header printing `daemon vv2.2.0-unstable-hive.7`
+on every page for another two firmware builds. "Checked by a clean build" is
+a real check and it is not the same as having looked.
 
 ## What is changed
 
 | change | why | how it was checked |
 |---|---|---|
-| **The daemon version prints one `v`** | The About page wrapped every version in an unconditional `` `v${...}` ``. Our firmware's `VERSION` already starts with one, so the board showed `vv2.2.0-unstable-hive.5`. Stripping the `v` in the firmware was the wrong end to fix it: `tpi info` prints the same string and our flash scripts verify against it | A helper prefixes `v` only when the value lacks one, applied to all four version rows. `tsc -b` and `eslint` clean; not yet seen in a browser |
+| **The daemon version prints one `v`** | The About page wrapped every version in an unconditional `` `v${...}` ``. Our firmware's `VERSION` already starts with one, so the board showed `vv2.2.0-unstable-hive.5`. Stripping the `v` in the firmware was the wrong end to fix it: `tpi info` prints the same string and our flash scripts verify against it | A helper prefixes `v` only when the value lacks one. It now lives in `src/lib/format.ts` and every render site goes through it — the first pass put it inside `about.lazy.tsx`, where the header could not reach it, and the header went on doubling the `v` until this one. `grep` for a literal `v` in front of a value finds nothing left. `tsc -b` and `eslint` clean; not yet seen in a browser |
 | **A missing value renders as `—`, not `vundefined`** | The board showed `Build version: vundefined` because bmcd never populated `build_version`. That is [fixed in our bmcd fork](https://github.com/excavador/bmcd), and the page already reads exactly that field. The dash is so the next missing field looks missing instead of looking like a string | Same helper. The UI side needed no field rename: `data.build_version` goes straight from the API response to the page |
+| **The board model has no trailing padding** | `board_model` is a fixed-width EEPROM field and bmcd forwards it byte for byte, so `TuringPi2` arrives with seven NULs after it and the About row read `TuringPi2␀␀␀␀␀␀␀ (v2.5.2)` with the revision pushed out of line. Not a daemon fix: those bytes have been identical for years and `tpi` parses the same JSON, so a trailing-NUL change there is a compatibility risk taken to move whitespace | Stripped for display only, NUL and U+FFFD both. The helper was exercised on the padded, replacement-character, all-padding, null and interior-space cases; not yet seen in a browser |
+| **The board serial is on the About page** | bmcd now sends `board_serial`. It is the number an asset register or a support conversation asks for, and until now the only way to read it off a running BMC was over SSH | A row under model and revision. Typed `string \| null`, because an unprogrammed board really does send null, and it renders the same dash an older daemon's missing key does |
+| **The switch ports are visible** | The Info page listed the BMC's own addresses and nothing about the six ports the compute modules hang off. A node port that never linked presents as a node you cannot reach while the BMC answers fine, which sends you looking in the wrong place. On the board as it stands, `ge1` is down and no page in this interface says so | A new panel, [described below](#the-switch-panel-in-detail). Built and linted clean, translation keys present in all six locales, helper behaviour exercised in isolation — but **the panel has never received a real response**; see the panel section for exactly what that leaves unverified |
 | **Fonts: 669 KB → 176 KB** | Fonts were 45 % of the bundle on a board with 128 MB of flash, and most of them could not be drawn on any screen this interface renders | See below |
 | **A release pipeline** | The firmware pins the UI tarball by sha256 and needs somewhere to fetch it from that is not a dormant upstream | Packaging dry-run against a real build: the tarball unpacks to `dist/`, `sha256sum -c SHA256SUMS` passes, two runs are byte-identical. Nothing has been tagged |
 | **`LICENSE` ships inside the tarball** | Upstream's asset omits it while our `.mk` declares `BMC_UI_LICENSE_FILES = LICENSE`, so Buildroot has been looking for a file that was never there. We redistribute a GPL-2.0 work on a device | Buildroot extracts with `--strip-components=1`, so `dist/LICENSE` is exactly where that variable resolves |
@@ -114,6 +127,124 @@ that made it. The dependency review below moved them; see
   warning at all. That was not a code-splitting exercise — it is what vite 8
   emits — so the JS is still 77 % of the output and still the thing to shrink
   if the output ever needs shrinking.
+
+## The switch panel, in detail
+
+`GET /api/bmc?opt=get&type=network` is new in our bmcd fork. It reports the
+six ports of the on-board switch — `node1`–`node4` carrying one compute
+module each, `ge0` and `ge1` as uplinks — and the Info page now renders all of
+them under **Switch Ports**, beside the BMC addresses it already listed. Each
+port arrives as `{name, kind, present, link, operstate, speed_mbps, duplex,
+rx_bytes, tx_bytes, rx_errors, tx_errors}`.
+
+| what is shown | when |
+|---|---|
+| the port name, under a node/uplink heading | always. A `kind` bmcd grows later gets its own group rather than being dropped by a filter that knows two |
+| link up / down | whenever the port was probed |
+| negotiated speed and duplex | when linked. A gigabit port that came up 100/half is a bad cable, and it reads as healthy everywhere else |
+| rx/tx bytes, in the jedec units the storage bars already use | whenever the port was probed. They are cumulative, so a down port with traffic behind it is a link that dropped rather than one that never came up |
+| rx/tx errors | only when non-zero |
+| the kernel `operstate` | only for a down port, and only when it says more than "down". `lowerlayerdown` — what `ge1` reports — is the difference between "nothing plugged in" and "the layer under me is gone" |
+
+The three port states are deliberately not styled alike:
+
+| state | rendering | why |
+|---|---|---|
+| `present: false` | red, plus an alarm above the list | the switch driver did not probe the port. On the four node ports that is every compute module cut off from the network while the BMC serving this page stays perfectly reachable — the failure that looks like nothing at all. It must not render as an empty table or a blank row |
+| probed, `link: false` | amber | normal for an unplugged uplink or a powered-off node, and still worth seeing at a glance |
+| probed, `link: true` | plain, with the rate beside it | |
+
+Zero ports at all is treated as that same alarm rather than as nothing to draw.
+
+**One deliberate departure from the rest of `get.ts`.** Every other Info query
+is a `useSuspenseQuery`, and a suspense query that throws takes the whole
+route to its `errorComponent` — storage, fans, addresses and the reboot
+buttons go with it. `type=network` exists only in our bmcd fork, so on an
+older daemon that is exactly what would happen. This one is a plain
+`useQuery` which renders a line of prose in its own space instead. It is also
+the only Info query that polls: five seconds, stopping once it has failed,
+because a link state read once when the tab was opened is the thing the panel
+exists to avoid.
+
+Everything else is the page's own furniture — `TableItem` rows inside a `dl`,
+the red from the toast's destructive variant, `filesize` with the `jedec`
+standard the storage section already passes, the muted lowercase label from
+the header. No new dependency and no new styling idiom. All sixteen new
+strings go through `src/locale/`, in all six locales.
+
+### What the panel leaves unverified
+
+More than anything else in this fork, so it is worth being exact. The panel
+has never received a response from a bmcd — not a live one, not a recorded
+one. What was checked:
+
+- `tsc -b` and `eslint .` clean, and the build emits the panel's chunk.
+- Every `t("…")` key used anywhere in `src/` exists in `en.ts`, and the
+  sixteen keys this panel adds — along with the board-serial key added beside
+  them — exist in all six locale files. That check was a script over the tree,
+  not a reading.
+- `versionLabel` and `eepromLabel` were exercised directly on the padded,
+  replacement-character, all-padding, null, undefined, empty and
+  interior-space cases.
+
+What was not, and what it would cost:
+
+- **No rendered check.** Not in a browser, not in a snapshot. The layout, the
+  colours, the wrapping of a six-port list on a phone: all of it is
+  build-output reasoning.
+- **The wire is not typed.** `SwitchPort` describes what bmcd is documented
+  to send; TypeScript checks nothing at runtime. A renamed or missing field
+  would render as `undefined` or `NaN` in a cell rather than fail loudly.
+- **The alarm has never been seen.** No board has been observed reporting
+  `present: false`, so the one state the panel exists to make unmissable is
+  the one state nothing has rendered. Same for a port with non-zero errors.
+- **`duplex` passes through verbatim** unless it is exactly `full` or `half`,
+  which are the only two values translated. A kernel that says something else
+  shows that something else, untranslated.
+- **The five non-English locales were written without a native reviewer.**
+  They are translations, not English placeholders, but they have had one pair
+  of eyes.
+
+### Panels pass: proof it still builds
+
+The same battery the dependency passes used, from an empty `node_modules`:
+`devbox run -- npm ci && npm run lint && npm run build` clean, `npm audit`
+still **zero**, `eslint .` back to the same 3 warnings and 0 errors, `git
+status` clean after a build — `routeTree.gen.ts` does not move, because none
+of this adds a route. **Two consecutive builds are byte-identical across all
+32 files**, which is the assertion the sha256-pinned tarball actually rests
+on.
+
+The font pipeline is hand-rolled and a panel is not the kind of change that
+should touch it. It did not:
+
+| assertion | before | after |
+|---|---|---|
+| `@font-face` rules in `dist/` | 6 | **6** |
+| `url()` references | 6 | **6** |
+| `.woff2` files shipped | 6 | **6** |
+| bare `.woff` references | 0 | **0** |
+| every `url()` target present in `dist/` | yes | **yes** |
+| the six `.woff2` files, byte for byte | — | **all six unchanged** |
+
+The two logo SVGs are byte-identical as well.
+
+| | `hive` | with the panels |
+|---|---|---|
+| total `dist/` | 1,080,364 B, 32 files | **1,092,645 B, 32 files** |
+| JS | 831,246 B (21 files) | 841,359 B (21 files) |
+| CSS | 45,788 B | 47,956 B |
+| fonts | 179,976 B (6 `.woff2`) | 179,976 B (6 `.woff2`) |
+| SVG | 21,355 B (2 logos) | 21,355 B |
+| `index.html` | 1,973 B | 1,973 B |
+| release tarball | 460,685 B | **463,883 B** |
+
+**+12,281 B, +1.14 %.** Roughly 10 KB of it is JS and 2 KB is CSS. The JS is
+the panel plus ninety-six new translation strings across six locales, all of
+which ship in the main chunk because `src/locale/` is imported eagerly by
+`i18n.ts`; the CSS is the utilities the panel's classes pull in. Both tarball
+figures were taken with the same fixed `mtime`, so they are comparable to each
+other rather than to the number recorded in the previous section.
 
 ## Dependencies
 
