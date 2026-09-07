@@ -1,0 +1,149 @@
+name: Release
+
+# A pushed tag is the only thing that publishes here.
+#
+# Upstream's tag-and-build.yml does the opposite: it tags from the version
+# in package.json on every push to main and releases whatever it tagged.
+# That suits a project whose output is a website. It does not suit this one,
+# because the tarball is an input to a firmware build that pins it by
+# sha256 -- so cutting a release has to be a decision somebody made, not a
+# side effect of a merge.
+on:
+  push:
+    tags: ["v*"]
+
+# Never cancel a release in flight: the tag is already public by the time
+# this starts.
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # the release steps; nothing else here writes
+
+    # Actions are pinned by commit, with the moving tag in the comment: a
+    # retagged action cannot change what runs in a job that can publish
+    # releases.
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The toolchain comes from devbox.json rather than from whatever node
+      # the runner image happens to ship, so the bytes a firmware build pins
+      # by sha256 were produced by the same node a developer has locally.
+      - name: install devbox
+        uses: jetify-com/devbox-install-action@8c6a66ed6273138b1915457069de78cb52fe3bd7 # v0.15.0
+        with:
+          devbox-version: 0.18.0
+          enable-cache: "true"
+
+      - name: toolchain
+        run: devbox run -- 'node --version; npm --version'
+
+      - name: install dependencies
+        run: devbox run -- npm ci
+
+      - name: build
+        run: devbox run -- npm run build
+
+      # The asset keeps upstream's name -- bmc-ui-<tag>.tar.gz wrapping a
+      # top-level dist/ -- so Buildroot's generic-package finds it under the
+      # default source filename it derives from the package name and
+      # version, and our bmc-ui.mk needs nothing changed but BMC_UI_SITE and
+      # BMC_UI_VERSION.
+      #
+      # LICENSE goes INSIDE dist/. Buildroot extracts with
+      # --strip-components=1, so dist/ becomes the package source directory
+      # and BMC_UI_LICENSE_FILES = LICENSE -- which our .mk has always
+      # declared -- finally resolves against a file that exists. Upstream's
+      # tarball omits it: for a GPL-2.0 work redistributed on a device, that
+      # is a gap worth closing rather than inheriting. It also lands in
+      # /srv/bmcd/www/, so the licence is served next to the UI it covers.
+      #
+      # The archive is built with fixed ownership, sorted names and the tag
+      # commit's timestamp, and gzipped with -n, so re-running the same tag
+      # does not produce a different sha256 purely because of when it ran.
+      - name: stage the tarball
+        run: |
+          set -eu
+          cp LICENSE dist/LICENSE
+          mkdir -p artifacts
+          SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          tar --sort=name \
+              --owner=0 --group=0 --numeric-owner \
+              --mtime="@${SOURCE_DATE_EPOCH}" \
+              -cf - dist \
+            | gzip -9 -n > "artifacts/bmc-ui-${GITHUB_REF_NAME}.tar.gz"
+          tar -tzf "artifacts/bmc-ui-${GITHUB_REF_NAME}.tar.gz" | head -5
+
+      # SHA256SUMS lists BARE BASENAMES, and the guard below fails the
+      # release if one ever does not.
+      #
+      # This is the trap that cost the firmware repo a day. `sha256sum -c`
+      # resolves each name relative to the current directory, so a line
+      # carrying a path -- an absolute build-machine path, or even
+      # "artifacts/..." -- makes it fail to OPEN the file on the machine
+      # doing the verifying. That is a different failure from a mismatch,
+      # and the "No such file or directory" it prints is easy for a build
+      # script to step over as though the check had passed. Generating from
+      # inside the directory is what keeps the names bare.
+      - name: checksums
+        run: |
+          set -eu
+          cd artifacts
+          sha256sum -- *.tar.gz > SHA256SUMS
+          if grep -q '/' SHA256SUMS; then
+            echo "SHA256SUMS contains a path; it must list basenames only" >&2
+            exit 1
+          fi
+          sha256sum -c SHA256SUMS
+          cat SHA256SUMS
+
+      - name: archive artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          if-no-files-found: error
+          name: bmc-ui-${{ github.ref_name }}
+          path: artifacts/*
+
+      # draft: true, then publish in a separate step. With immutable
+      # releases enabled, assets are locked the moment a release is
+      # published, and this action publishes a prerelease BEFORE uploading
+      # to it. A draft accepts assets; `gh release edit --draft=false` then
+      # makes the whole set visible at once, which is also what a downloader
+      # wants. A tag with a "-" in it is a prerelease and never "Latest".
+      - name: release (draft, with assets)
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          files: artifacts/*
+          fail_on_unmatched_files: true
+          draft: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          make_latest: ${{ !contains(github.ref_name, '-') }}
+          body: |
+            BMC-UI built from the `hive` branch of this fork, for the
+            Turing Pi 2 BMC firmware build to consume.
+
+            **Not a Turing Pi release.** `bmc-ui-${{ github.ref_name }}.tar.gz`
+            unpacks to `dist/`, which is what lands in `/srv/bmcd/www/`.
+
+            Verify with:
+
+            ```
+            sha256sum -c SHA256SUMS
+            ```
+
+            SHA256SUMS lists bare filenames, so run it from the directory
+            holding the tarball.
+
+      - name: publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release edit "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" --draft=false

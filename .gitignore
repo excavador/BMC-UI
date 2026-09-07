@@ -26,3 +26,6 @@ dist-ssr
 # devbox / direnv
 .devbox
 .direnv
+
+# release staging
+artifacts
