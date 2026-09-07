@@ -196,6 +196,107 @@ export interface ThermalResponse {
   cooling: ThermalCooling[];
 }
 
+/**
+ * The kernel load average, as `type=health` reports it.
+ *
+ * `present` is the daemon's answer to "could I read /proc/loadavg", not a
+ * claim about the numbers. A board that could not read it must not render as
+ * an idle one.
+ */
+export interface HealthLoad {
+  one_minute: number;
+  five_minutes: number;
+  fifteen_minutes: number;
+  present: boolean;
+}
+
+/**
+ * The BMC's own RAM.
+ *
+ * This board has 116 MB of it in total, and that is not a decoration: a
+ * firmware upload has already failed on this machine for want of memory,
+ * while every page of this interface said the board was fine. `available` is
+ * the kernel's own estimate of what a new allocation could actually get, so
+ * `total - available` is what is in use and not reclaimable, and that is the
+ * number the bar draws. `free` is the smaller, less useful figure and is
+ * shown beside it rather than instead of it.
+ */
+export interface HealthMemory {
+  total_bytes: number;
+  free_bytes: number;
+  available_bytes: number;
+  present: boolean;
+}
+
+/**
+ * The NAND the firmware lives on, in the eraseblocks UBI counts it in.
+ *
+ * On a board that is reflashed often this is the number that runs out. Bad
+ * eraseblocks are the ones that never come back; reserved ones are the pool
+ * held aside to replace them.
+ */
+export interface HealthNand {
+  total_eraseblocks: number;
+  available_eraseblocks: number;
+  bad_eraseblocks: number;
+  reserved_eraseblocks: number;
+  eraseblock_size_bytes: number;
+  available_bytes: number;
+  present: boolean;
+}
+
+/** One real-time clock device the board carries. */
+export interface HealthRtc {
+  device: string;
+  name: string;
+}
+
+/**
+ * The board's clock, and what is keeping it.
+ *
+ * `synchronised` is three-valued. True and false are chrony's answer; **null
+ * means chrony could not be reached**, which is a different fact and must not
+ * be drawn as "not synchronised" -- one says the clock is wrong, the other
+ * says nobody knows.
+ *
+ * `offset_seconds` arrives from serde in exponent form for small values; see
+ * `offsetReading` in `src/lib/format.ts`.
+ */
+export interface HealthClock {
+  synchronised: boolean | null;
+  source: string | null;
+  stratum: number | null;
+  offset_seconds: number | null;
+  /** How the offset was obtained, e.g. "chronyc tracking". */
+  measured_by: string | null;
+  rtc: HealthRtc[];
+}
+
+/** What the daemon sends. Every key, and every sub-key, may be missing. */
+interface HealthWire {
+  uptime_seconds?: number | null;
+  load?: HealthLoad | null;
+  memory?: HealthMemory | null;
+  nand?: HealthNand | null;
+  clock?: (Partial<HealthClock> & { rtc?: HealthRtc[] | null }) | null;
+}
+
+/**
+ * Board health, normalised so every section is answerable.
+ *
+ * A null section means the daemon did not report it at all, which is not the
+ * same as a section that reported `present: false` -- the first is an older
+ * daemon, the second is a board that tried and could not read. Both render as
+ * words rather than as zeroes.
+ */
+export interface HealthResponse {
+  uptime_seconds: number | null;
+  load: HealthLoad | null;
+  memory: HealthMemory | null;
+  nand: HealthNand | null;
+  clock: HealthClock | null;
+}
+
 export interface NodeInfoResponse {
   module_name: string | null;
   name: string | null;
@@ -460,6 +561,59 @@ export function useThermalQuery() {
  * worse than no panel. Five seconds is slow enough to be free on a BMC and
  * fast enough that a cable pull is visible before you reach for the page.
  */
+/**
+ * How the BMC itself is doing: uptime, load, memory, NAND and the clock.
+ *
+ * `type=health` is new in our bmcd fork, so this is a plain `useQuery` for
+ * the reason the switch and thermal panels are: a suspense query that throws
+ * takes the whole Info route to its error component, and losing storage, the
+ * fan and the reboot buttons because a load average was unavailable is a bad
+ * trade. Five seconds, the same cadence as the two panels beside it, so the
+ * page has one tick rather than three.
+ *
+ * Each section is normalised to null when absent, and the clock is rebuilt
+ * field by field because it is the one section whose sub-keys carry meaning
+ * when missing: `synchronised` has to stay three-valued through this, and
+ * `rtc` has to become an empty list rather than an undefined one.
+ */
+export function useHealthQuery() {
+  const api = useAxiosWithAuth();
+
+  return useQuery({
+    queryKey: ["health"],
+    queryFn: async () => {
+      const response = await api.get<APIResponse<HealthWire>>("/bmc", {
+        params: {
+          opt: "get",
+          type: "health",
+        },
+      });
+      const result = response.data.response[0].result;
+      const clock = result.clock;
+      return {
+        uptime_seconds: result.uptime_seconds ?? null,
+        load: result.load ?? null,
+        memory: result.memory ?? null,
+        nand: result.nand ?? null,
+        clock: clock
+          ? {
+              synchronised: clock.synchronised ?? null,
+              source: clock.source ?? null,
+              stratum: clock.stratum ?? null,
+              offset_seconds: clock.offset_seconds ?? null,
+              measured_by: clock.measured_by ?? null,
+              rtc: clock.rtc ?? [],
+            }
+          : null,
+      } satisfies HealthResponse;
+    },
+    // Stop polling once it has failed, as the panels beside it do: an older
+    // daemon answers the same way in five seconds' time.
+    refetchInterval: (query) => (query.state.error ? false : 5000),
+    retry: false,
+  });
+}
+
 export function useSwitchPortsQuery() {
   const api = useAxiosWithAuth();
 
