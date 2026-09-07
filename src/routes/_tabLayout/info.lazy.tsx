@@ -3,6 +3,7 @@ import { filesize } from "filesize";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import FanControl from "@/components/FanControl";
 import RebootModal from "@/components/RebootModal";
 import InfoSkeleton from "@/components/skeletons/info";
 import SwitchPorts from "@/components/SwitchPorts";
@@ -10,12 +11,10 @@ import TableItem from "@/components/TableItem";
 import TabView from "@/components/TabView";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { useBackupMutation } from "@/lib/api/file";
-import { useCoolingDevicesQuery, useInfoTabData } from "@/lib/api/get";
+import { useInfoTabData } from "@/lib/api/get";
 import {
-  useCoolingDeviceMutation,
   useNetworkResetMutation,
   useRebootBMCMutation,
   useReloadBMCMutation,
@@ -50,19 +49,8 @@ export function Info() {
   const { toast } = useToast();
   const [rebootModalOpened, setRebootModalOpened] = useState(false);
   const { data } = useInfoTabData();
-  const { data: coolingDevices } = useCoolingDevicesQuery();
-  const [coolingDeviceSpeeds, setCoolingDeviceSpeeds] = useState(
-    coolingDevices.reduce(
-      (acc, device) => {
-        acc[device.device] = device.speed;
-        return acc;
-      },
-      {} as Record<string, number>
-    )
-  );
   const { mutate: mutateResetNetwork, isPending: resetNetworkPending } =
     useNetworkResetMutation();
-  const { mutate: mutateCoolingDevices } = useCoolingDeviceMutation();
   const { mutate: mutateRebootBMC, isPending: rebootPending } =
     useRebootBMCMutation();
   const { mutate: mutateReloadBMC, isPending: reloadPending } =
@@ -197,53 +185,7 @@ export function Info() {
         </div>
       </div>
 
-      {coolingDevices.length > 0 && (
-        <div>
-          <div className="mb-6 text-lg font-bold">{t("info.fanControl")}</div>
-          <div className="space-y-4">
-            {coolingDevices.map((coolingDevice) => {
-              return (
-                <div
-                  key={coolingDevice.device}
-                  className="flex items-center justify-between"
-                >
-                  <div className="w-1/4 font-semibold">
-                    {coolingDevice.device}
-                  </div>
-                  <div className="flex w-2/4 items-center lg:w-3/4">
-                    <Slider
-                      className="mr-4 md:mr-0"
-                      defaultValue={[coolingDevice.speed]}
-                      min={0}
-                      max={coolingDevice.max_speed}
-                      onValueChange={(value) =>
-                        setCoolingDeviceSpeeds((prevSpeeds) => ({
-                          ...prevSpeeds,
-                          [coolingDevice.device]: value[0],
-                        }))
-                      }
-                      onValueCommit={(value) =>
-                        mutateCoolingDevices({
-                          device: coolingDevice.device,
-                          speed: value[0],
-                        })
-                      }
-                    />
-                    <div className="flex w-1/5 justify-end font-semibold lg:w-1/12">
-                      {Math.round(
-                        (coolingDeviceSpeeds[coolingDevice.device] /
-                          coolingDevice.max_speed) *
-                          100
-                      )}
-                      %
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <FanControl />
 
       <div>
         <div className="mb-6 text-lg font-bold">

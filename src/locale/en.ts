@@ -64,6 +64,19 @@ const translations = {
       "The BMC reported no switch ports at all. The switch driver is not running, which cuts every compute module off from the network while the BMC itself stays reachable.",
     switchPortsUnavailable:
       "This BMC daemon does not report switch port status.",
+    thermalCelsius: "{{value}} °C",
+    thermalAbsent: "not detected",
+    thermalUnavailable: "This BMC daemon does not report board temperature.",
+    thermalNoSensors:
+      "This board reports no thermal sensor, so there is no temperature to read. The fan runs at whatever it was last set to, with nothing to regulate against.",
+    fanAutomatic: "automatic",
+    fanStep: "{{cur}} of {{max}}",
+    fanRequested: "set {{value}}",
+    fanGovernorNote:
+      "The kernel regulates this fan from the board temperature. A setting here is an override that the governor undoes at its next poll, a few seconds later.",
+    fanReverted:
+      "The board reset {{device}} to {{cur}} of {{max}} after it was set to {{requested}}.",
+    ariaFanStep: "Fan {{device}} cooling step",
   },
   nodes: {
     header: "Control the power supply of connected nodes",

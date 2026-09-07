@@ -67,6 +67,19 @@ const translations = {
       "BMC nie zgłosił żadnych portów przełącznika. Sterownik przełącznika nie działa, co odcina wszystkie moduły obliczeniowe od sieci, podczas gdy sam BMC pozostaje osiągalny.",
     switchPortsUnavailable:
       "Ten demon BMC nie zgłasza stanu portów przełącznika.",
+    thermalCelsius: "{{value}} °C",
+    thermalAbsent: "nie wykryto",
+    thermalUnavailable: "Ten demon BMC nie zgłasza temperatury płyty.",
+    thermalNoSensors:
+      "Ta płyta nie zgłasza żadnego czujnika temperatury, więc nie ma czego odczytać. Wentylator pracuje z ostatnio ustawioną wartością, nie mając czego regulować.",
+    fanAutomatic: "automatycznie",
+    fanStep: "{{cur}} z {{max}}",
+    fanRequested: "ustawiono {{value}}",
+    fanGovernorNote:
+      "Jądro reguluje ten wentylator na podstawie temperatury płyty. Ustawienie tutaj jest nadpisaniem, które regulator cofa przy następnym odpytaniu, kilka sekund później.",
+    fanReverted:
+      "Płyta przywróciła {{device}} do {{cur}} z {{max}} po ustawieniu na {{requested}}.",
+    ariaFanStep: "Stopień chłodzenia wentylatora {{device}}",
   },
   nodes: {
     header: "Kontroluj zasilanie podłączonych węzłów",
