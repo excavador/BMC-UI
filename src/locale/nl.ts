@@ -173,6 +173,28 @@ const translations = {
     },
   },
   firmwareUpgrade: {
+    firmwareSlots: "Firmwareslots",
+    slotRunning: "Actief",
+    slotRollback: "Terugval",
+    slotVolumeId: "id {{id}}",
+    slotVersionUnreadable: "versie niet leesbaar",
+    slotMissing: "niet gemeld",
+    slotNextboot: "Volgende start",
+    slotStaged: "Update klaargezet",
+    slotStagedYes: "ja",
+    slotStagedNo: "nee",
+    slotStagedUnknown: "niet te lezen",
+    slotStagedTitle: "Er staat een update klaar",
+    slotStagedDescription:
+      "De volgende herstart start het andere slot. Tot dan draait het board verder op de firmware hieronder.",
+    slotPromotion: "Laatste promotie",
+    slotsUnavailable: "Deze BMC-daemon meldt geen firmwareslots.",
+    slotsAbsent:
+      "Dit board meldt geen A/B-firmware-indeling, dus er is geen tweede slot en niets om op terug te vallen.",
+    slotRollbackNote:
+      "Het terugvalvolume is niet aangekoppeld, dus de versie ervan is op een draaiend systeem niet te lezen. Het volume en de grootte zijn alles wat het board erover meldt.",
+    slotPromotionNote:
+      "De promotie is het oordeel van de eigen startcontrole van het board bij de laatste start. Een board dat zijn controles niet doorstond en zichzelf terugzette op de vorige firmware, meldt dat hier en nergens anders.",
     header: "BMC-firmware upgraden",
     fileInput: ".tpu-bestand (extern of lokaal):",
     shaInput: "SHA-256 (optioneel):",

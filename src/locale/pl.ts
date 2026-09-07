@@ -173,6 +173,28 @@ const translations = {
     },
   },
   firmwareUpgrade: {
+    firmwareSlots: "Sloty firmware",
+    slotRunning: "Uruchomiony",
+    slotRollback: "Wycofanie",
+    slotVolumeId: "id {{id}}",
+    slotVersionUnreadable: "wersja nieczytelna",
+    slotMissing: "nie zgłoszono",
+    slotNextboot: "Następny rozruch",
+    slotStaged: "Aktualizacja przygotowana",
+    slotStagedYes: "tak",
+    slotStagedNo: "nie",
+    slotStagedUnknown: "nie udało się odczytać",
+    slotStagedTitle: "Aktualizacja jest przygotowana",
+    slotStagedDescription:
+      "Następny restart uruchomi drugi slot. Do tego czasu płyta pracuje na firmwarze wymienionym poniżej.",
+    slotPromotion: "Ostatnia promocja",
+    slotsUnavailable: "Ten demon BMC nie zgłasza slotów firmware.",
+    slotsAbsent:
+      "Ta płyta nie zgłasza układu firmware A/B, więc nie ma drugiego slotu ani niczego, do czego można by wrócić.",
+    slotRollbackNote:
+      "Wolumin wycofania nie jest zamontowany, więc jego wersji nie da się odczytać z działającego systemu. Nazwa woluminu i jego rozmiar to wszystko, co płyta o nim zgłasza.",
+    slotPromotionNote:
+      "Promocja to werdykt własnej kontroli rozruchowej płyty z ostatniego startu. Płyta, która nie przeszła kontroli i wróciła na poprzedni firmware, mówi o tym tutaj i nigdzie indziej.",
     header: "Aktualizacja oprogramowania BMC",
     fileInput: "Plik .tpu (zdalnie lub lokalnie):",
     shaInput: "SHA-256 (opcjonalnie):",

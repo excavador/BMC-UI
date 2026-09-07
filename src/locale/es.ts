@@ -174,6 +174,28 @@ const translations = {
     },
   },
   firmwareUpgrade: {
+    firmwareSlots: "Ranuras de firmware",
+    slotRunning: "En ejecución",
+    slotRollback: "Reversión",
+    slotVolumeId: "id {{id}}",
+    slotVersionUnreadable: "versión no legible",
+    slotMissing: "no informado",
+    slotNextboot: "Próximo arranque",
+    slotStaged: "Actualización preparada",
+    slotStagedYes: "sí",
+    slotStagedNo: "no",
+    slotStagedUnknown: "no se pudo leer",
+    slotStagedTitle: "Hay una actualización preparada",
+    slotStagedDescription:
+      "El próximo reinicio arrancará la otra ranura. Hasta entonces la placa sigue ejecutando el firmware que aparece abajo.",
+    slotPromotion: "Última promoción",
+    slotsUnavailable: "Este demonio BMC no informa de las ranuras de firmware.",
+    slotsAbsent:
+      "Esta placa no informa de un esquema de firmware A/B, así que no hay una segunda ranura ni nada a lo que revertir.",
+    slotRollbackNote:
+      "El volumen de reversión no está montado, por lo que su versión no puede leerse desde un sistema en ejecución. El volumen y su tamaño son todo lo que la placa informa sobre él.",
+    slotPromotionNote:
+      "La promoción es el veredicto de la propia comprobación de arranque de la placa la última vez que arrancó. Una placa que no superó sus comprobaciones y volvió al firmware anterior lo dice aquí y en ningún otro sitio.",
     header: "Actualizar firmware BMC",
     fileInput: "Archivo .tpu (remoto o local):",
     shaInput: "SHA-256 (opcional):",
