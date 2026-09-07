@@ -13,6 +13,7 @@ import AboutSkeleton from "@/components/skeletons/about";
 import TableItem from "@/components/TableItem";
 import TabView from "@/components/TabView";
 import { useAboutTabData } from "@/lib/api/get";
+import { versionLabel } from "@/lib/format";
 
 import { version } from "../../../package.json";
 
@@ -28,21 +29,6 @@ TimeAgo.addLocale(nl);
 TimeAgo.addLocale(pl);
 TimeAgo.addLocale(zh);
 
-/**
- * Render a version string with exactly one leading "v".
- *
- * Our firmware's VERSION already carries one, so the unconditional `v${...}`
- * upstream uses printed "vv2.2.0-unstable-hive.5" on the board. Dropping the
- * "v" at the source is not an option: `tpi info` prints the same string and
- * the flash scripts verify against it, so the doubling has to be fixed here.
- *
- * A value the daemon did not send renders as a dash instead of "vundefined".
- */
-function versionLabel(value: string | undefined | null): string {
-  if (value === null || value === undefined || value === "") return "\u2014";
-  return value.startsWith("v") ? value : `v${value}`;
-}
-
 export function About() {
   const {
     t,
@@ -56,7 +42,7 @@ export function About() {
     <TabView>
       <dl className="flex flex-col">
         <TableItem term={t("about.boardModel")}>
-          {data.board_model} (v{data.board_revision})
+          {data.board_model} ({versionLabel(data.board_revision)})
         </TableItem>
         <TableItem term={t("about.hostname")}>{data.hostname}</TableItem>
         <TableItem term={t("about.daemonVersion")}>
