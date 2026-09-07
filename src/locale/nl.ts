@@ -47,6 +47,25 @@ const translations = {
     rebootFailed: "BMC opnieuw opstarten mislukt",
     reloadDaemonSuccess: "De BMC-daemon wordt opnieuw geladen...",
     reloadDaemonFailed: "BMC-daemon herladen mislukt",
+    switchPorts: "Switchpoorten",
+    switchNodePorts: "Nodepoorten",
+    switchUplinkPorts: "Uplinkpoorten",
+    switchOtherPorts: "Overige poorten",
+    switchPortUp: "verbonden",
+    switchPortDown: "niet verbonden",
+    switchPortAbsent: "niet gedetecteerd",
+    switchPortSpeed: "{{speed}} Mb/s",
+    switchPortDuplexFull: "full duplex",
+    switchPortDuplexHalf: "half duplex",
+    switchPortTraffic: "rx {{rx}} · tx {{tx}}",
+    switchPortErrors: "fouten: {{rx}} rx / {{tx}} tx",
+    switchNotProbed: "Switchpoorten niet gedetecteerd",
+    switchNotProbedDescription:
+      "De switchdriver van de BMC heeft de hieronder gemarkeerde poorten niet gedetecteerd. Een computemodule achter een niet-gedetecteerde nodepoort heeft helemaal geen netwerk, terwijl de BMC zelf bereikbaar blijft, zodat niets anders op deze pagina verkeerd lijkt.",
+    switchNoPorts:
+      "De BMC heeft helemaal geen switchpoorten gerapporteerd. De switchdriver draait niet, waardoor elke computemodule van het netwerk is afgesneden terwijl de BMC zelf bereikbaar blijft.",
+    switchPortsUnavailable:
+      "Deze BMC-daemon rapporteert geen status van switchpoorten.",
   },
   nodes: {
     header: "Stroomtoevoer van aangesloten nodes regelen",

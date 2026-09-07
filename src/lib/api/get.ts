@@ -52,6 +52,34 @@ interface InfoTabResponse {
   storage: { name: string; total_bytes: number; bytes_free: number }[];
 }
 
+/**
+ * One port of the on-board switch, as `type=network` reports it.
+ *
+ * `node1`..`node4` carry a compute module each; `ge0`/`ge1` are the uplinks.
+ * `present` is the switch driver's own answer to "did I probe this port": it
+ * is false when the driver never came up, which is a different and much worse
+ * condition than a port that probed and has no link.
+ */
+export interface SwitchPort {
+  name: string;
+  kind: "node" | "uplink";
+  present: boolean;
+  link: boolean;
+  /** The kernel operstate, e.g. "up", "down", "lowerlayerdown". */
+  operstate: string;
+  /** Null whenever the port is not linked; there is no speed to report. */
+  speed_mbps: number | null;
+  duplex: string | null;
+  rx_bytes: number;
+  tx_bytes: number;
+  rx_errors: number;
+  tx_errors: number;
+}
+
+interface NetworkTabResponse {
+  ports: SwitchPort[];
+}
+
 interface CoolingDevice {
   device: string;
   max_speed: number;
@@ -208,6 +236,43 @@ export function useCoolingDevicesQuery() {
       });
       return response.data.response[0].result;
     },
+  });
+}
+
+/**
+ * Switch port state.
+ *
+ * `useQuery`, not `useSuspenseQuery` like the rest of this file, on purpose.
+ * `type=network` is new in our bmcd fork, so an older daemon answers it with
+ * an error -- and a suspense query that throws takes the whole Info route to
+ * its `errorComponent`, losing storage, fans, addresses and the reboot
+ * buttons along with the panel. A panel that reports its own absence is worth
+ * more than one that takes the page down with it.
+ *
+ * Polled, unlike the other Info queries, because link state is the point:
+ * a panel showing an uplink that came back three minutes ago as still down is
+ * worse than no panel. Five seconds is slow enough to be free on a BMC and
+ * fast enough that a cable pull is visible before you reach for the page.
+ */
+export function useSwitchPortsQuery() {
+  const api = useAxiosWithAuth();
+
+  return useQuery({
+    queryKey: ["switchPorts"],
+    queryFn: async () => {
+      const response = await api.get<APIResponse<NetworkTabResponse>>("/bmc", {
+        params: {
+          opt: "get",
+          type: "network",
+        },
+      });
+      return response.data.response[0].result.ports;
+    },
+    // Stop polling once it has failed: an older daemon will fail the same
+    // way in five seconds' time, and a panel reporting its own absence has no
+    // reason to keep asking a BMC that has already answered.
+    refetchInterval: (query) => (query.state.error ? false : 5000),
+    retry: false,
   });
 }
 

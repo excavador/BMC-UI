@@ -48,6 +48,25 @@ const translations = {
     rebootFailed: "Neustart des BMC fehlgeschlagen",
     reloadDaemonSuccess: "Der BMC-Daemon wird neu geladen...",
     reloadDaemonFailed: "Neuladen des BMC-Daemons fehlgeschlagen",
+    switchPorts: "Switch-Ports",
+    switchNodePorts: "Node-Ports",
+    switchUplinkPorts: "Uplink-Ports",
+    switchOtherPorts: "Andere Ports",
+    switchPortUp: "verbunden",
+    switchPortDown: "getrennt",
+    switchPortAbsent: "nicht erkannt",
+    switchPortSpeed: "{{speed}} Mb/s",
+    switchPortDuplexFull: "Vollduplex",
+    switchPortDuplexHalf: "Halbduplex",
+    switchPortTraffic: "rx {{rx}} · tx {{tx}}",
+    switchPortErrors: "Fehler: {{rx}} rx / {{tx}} tx",
+    switchNotProbed: "Switch-Ports nicht erkannt",
+    switchNotProbedDescription:
+      "Der Switch-Treiber des BMC hat die unten markierten Ports nicht erkannt. Ein Compute-Modul hinter einem nicht erkannten Node-Port hat überhaupt kein Netzwerk, während das BMC selbst erreichbar bleibt, sodass nichts anderes auf dieser Seite falsch aussieht.",
+    switchNoPorts:
+      "Das BMC hat überhaupt keine Switch-Ports gemeldet. Der Switch-Treiber läuft nicht, wodurch jedes Compute-Modul vom Netzwerk getrennt ist, während das BMC selbst erreichbar bleibt.",
+    switchPortsUnavailable:
+      "Dieser BMC-Daemon meldet keinen Status der Switch-Ports.",
   },
   nodes: {
     header: "Stromversorgung der verbundenen Knoten steuern",
