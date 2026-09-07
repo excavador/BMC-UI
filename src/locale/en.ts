@@ -2,6 +2,7 @@ const translations = {
   navigation: {
     info: "Info",
     nodes: "Nodes",
+    console: "Console",
     usb: "USB",
     firmwareUpgrade: "Firmware Upgrade",
     flashNode: "Flash Node",
@@ -103,6 +104,41 @@ const translations = {
     resetConfirmDescription:
       "This will forcefully restart Node {{nodeId}}. Any unsaved data will be lost.",
     dontAskAgain: "Don't ask again for node power operations",
+  },
+  console: {
+    header: "Serial console for a compute module",
+    nodeSelect: "Module",
+    readerTask: "Reader task",
+    readerRunning: "running",
+    readerInitialized: "not started",
+    readerStopped: "stopped",
+    readerUnknown: "not reported",
+    readerUnavailable: "This BMC daemon does not report serial reader status.",
+    readerNote:
+      "This is the state of the daemon's own UART reader, not the module's. A module that is powered off, or booted and silent, has a reader in the same state as one that is mid-boot.",
+    stateConnecting: "connecting",
+    stateOpen: "connected",
+    stateClosed: "closed",
+    stateFailed: "not connected",
+    negotiated: "as {{protocol}}",
+    closeCode: "close code {{code}}",
+    closeCodeReason: "close code {{code}}: {{reason}}",
+    reconnectButton: "Reconnect",
+    clearButton: "Clear",
+    noSession:
+      "There is no session token to authenticate the console with. Log out and back in.",
+    failedHint:
+      "A browser does not say why a WebSocket handshake failed. A rejected session token and a daemon too old to serve this endpoint both arrive here as a close with no reason.",
+    inputNote:
+      "Click the terminal to type into it. Keystrokes go to the module exactly as typed, with nothing appended — Ctrl-C, tab completion and the arrow keys included.",
+    ariaTerminal: "Serial console for node {{nodeId}}",
+    restTitle: "The line-oriented alternative",
+    restIntro:
+      "The same UART is reachable over plain HTTP, without a WebSocket:",
+    restRead: "returns the node's whole 16 KiB buffer.",
+    restWrite: "writes one line.",
+    restCrlf:
+      "The writer always appends CRLF, so it cannot send a bare control character: no Ctrl-C, no tab completion, no arrow keys. It is the right tool from a shell script and the wrong one at a boot prompt.",
   },
   usb: {
     header: "USB route",

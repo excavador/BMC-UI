@@ -4,6 +4,7 @@ const translations = {
   navigation: {
     info: "Info",
     nodes: "Knoten",
+    console: "Konsole",
     usb: "USB",
     firmwareUpgrade: "Firmware-Upgrade",
     flashNode: "Knoten flashen",
@@ -106,6 +107,42 @@ const translations = {
     resetConfirmDescription:
       "Dies wird Knoten {{nodeId}} zwangsweise neu starten. Nicht gespeicherte Daten gehen verloren.",
     dontAskAgain: "Bei Knotenstromoperationen nicht mehr nachfragen",
+  },
+  console: {
+    header: "Serielle Konsole für ein Compute-Modul",
+    nodeSelect: "Modul",
+    readerTask: "Lese-Task",
+    readerRunning: "läuft",
+    readerInitialized: "nicht gestartet",
+    readerStopped: "gestoppt",
+    readerUnknown: "nicht gemeldet",
+    readerUnavailable:
+      "Dieser BMC-Daemon meldet keinen Status des seriellen Lese-Tasks.",
+    readerNote:
+      "Dies ist der Zustand des UART-Lese-Tasks im Daemon, nicht der des Moduls. Ein ausgeschaltetes oder ein gebootetes und stilles Modul hat einen Lese-Task im selben Zustand wie ein Modul mitten im Startvorgang.",
+    stateConnecting: "verbinde",
+    stateOpen: "verbunden",
+    stateClosed: "geschlossen",
+    stateFailed: "nicht verbunden",
+    negotiated: "als {{protocol}}",
+    closeCode: "Schließcode {{code}}",
+    closeCodeReason: "Schließcode {{code}}: {{reason}}",
+    reconnectButton: "Neu verbinden",
+    clearButton: "Leeren",
+    noSession:
+      "Es gibt kein Sitzungstoken, mit dem sich die Konsole authentifizieren könnte. Melden Sie sich ab und wieder an.",
+    failedHint:
+      "Ein Browser nennt nicht, warum ein WebSocket-Handshake fehlgeschlagen ist. Ein abgelehntes Sitzungstoken und ein Daemon, der zu alt für diesen Endpunkt ist, kommen hier beide als Schließen ohne Begründung an.",
+    inputNote:
+      "Klicken Sie in das Terminal, um darin zu tippen. Tastenanschläge gehen unverändert an das Modul, ohne dass etwas angehängt wird — einschließlich Strg-C, Tab-Vervollständigung und Pfeiltasten.",
+    ariaTerminal: "Serielle Konsole für Knoten {{nodeId}}",
+    restTitle: "Die zeilenorientierte Alternative",
+    restIntro:
+      "Dieselbe UART ist auch über einfaches HTTP erreichbar, ohne WebSocket:",
+    restRead: "gibt den gesamten 16-KiB-Puffer des Knotens zurück.",
+    restWrite: "schreibt eine Zeile.",
+    restCrlf:
+      "Der Schreibzugriff hängt immer CRLF an und kann daher kein einzelnes Steuerzeichen senden: kein Strg-C, keine Tab-Vervollständigung, keine Pfeiltasten. Für ein Shell-Skript ist das das richtige Werkzeug, an einem Boot-Prompt das falsche.",
   },
   usb: {
     header: "USB-Route",

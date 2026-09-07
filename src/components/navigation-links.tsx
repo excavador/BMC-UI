@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 const navigationLinks = [
   { to: "/info", label: "navigation.info" },
   { to: "/nodes", label: "navigation.nodes" },
+  { to: "/console", label: "navigation.console" },
   { to: "/usb", label: "navigation.usb" },
   { to: "/firmware-upgrade", label: "navigation.firmwareUpgrade" },
   { to: "/flash-node", label: "navigation.flashNode" },

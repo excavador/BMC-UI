@@ -4,6 +4,7 @@ const translations = {
   navigation: {
     info: "Información",
     nodes: "Nodos",
+    console: "Consola",
     usb: "USB",
     firmwareUpgrade: "Actualizar Firmware",
     flashNode: "Instalar SO",
@@ -106,6 +107,41 @@ const translations = {
     resetConfirmDescription:
       "Esto reiniciará forzosamente el Nodo {{nodeId}}. Cualquier dato no guardado se perderá.",
     dontAskAgain: "No volver a preguntar para operaciones de energía de nodos",
+  },
+  console: {
+    header: "Consola serie de un módulo de cómputo",
+    nodeSelect: "Módulo",
+    readerTask: "Tarea de lectura",
+    readerRunning: "en ejecución",
+    readerInitialized: "sin iniciar",
+    readerStopped: "detenida",
+    readerUnknown: "no informado",
+    readerUnavailable:
+      "Este demonio BMC no informa del estado de la lectura serie.",
+    readerNote:
+      "Este es el estado de la tarea de lectura UART del propio demonio, no el del módulo. Un módulo apagado, o arrancado y en silencio, tiene la tarea de lectura en el mismo estado que uno que está arrancando.",
+    stateConnecting: "conectando",
+    stateOpen: "conectado",
+    stateClosed: "cerrado",
+    stateFailed: "sin conexión",
+    negotiated: "como {{protocol}}",
+    closeCode: "código de cierre {{code}}",
+    closeCodeReason: "código de cierre {{code}}: {{reason}}",
+    reconnectButton: "Reconectar",
+    clearButton: "Limpiar",
+    noSession:
+      "No hay ningún token de sesión con el que autenticar la consola. Cierre la sesión y vuelva a iniciarla.",
+    failedHint:
+      "Un navegador no dice por qué ha fallado un saludo WebSocket. Un token de sesión rechazado y un demonio demasiado antiguo para servir este punto final llegan aquí igual: como un cierre sin motivo.",
+    inputNote:
+      "Haga clic en el terminal para escribir en él. Las pulsaciones se envían al módulo tal cual, sin añadir nada: incluidos Ctrl-C, el completado con tabulador y las flechas.",
+    ariaTerminal: "Consola serie del nodo {{nodeId}}",
+    restTitle: "La alternativa orientada a líneas",
+    restIntro: "La misma UART es accesible por HTTP simple, sin WebSocket:",
+    restRead: "devuelve el búfer completo de 16 KiB del nodo.",
+    restWrite: "escribe una línea.",
+    restCrlf:
+      "La escritura siempre añade CRLF, así que no puede enviar un carácter de control suelto: ni Ctrl-C, ni completado con tabulador, ni flechas. Es la herramienta correcta desde un script y la incorrecta ante un indicador de arranque.",
   },
   usb: {
     header: "Ruta USB",

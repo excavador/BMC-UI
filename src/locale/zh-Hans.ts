@@ -4,6 +4,7 @@ const translations = {
   navigation: {
     info: "信息",
     nodes: "节点",
+    console: "控制台",
     usb: "USB",
     firmwareUpgrade: "固件升级",
     flashNode: "刷写节点",
@@ -103,6 +104,39 @@ const translations = {
     resetConfirmDescription:
       "这将强制重启节点 {{nodeId}}。任何未保存的数据都将丢失。",
     dontAskAgain: "不再询问节点电源操作",
+  },
+  console: {
+    header: "计算模块串口控制台",
+    nodeSelect: "模块",
+    readerTask: "读取任务",
+    readerRunning: "运行中",
+    readerInitialized: "未启动",
+    readerStopped: "已停止",
+    readerUnknown: "未报告",
+    readerUnavailable: "此 BMC 守护进程不报告串口读取状态。",
+    readerNote:
+      "这是守护进程自身 UART 读取任务的状态，而不是模块的状态。已断电的模块，或已启动但没有输出的模块，其读取任务状态与正在启动的模块完全相同。",
+    stateConnecting: "连接中",
+    stateOpen: "已连接",
+    stateClosed: "已关闭",
+    stateFailed: "未连接",
+    negotiated: "使用 {{protocol}}",
+    closeCode: "关闭代码 {{code}}",
+    closeCodeReason: "关闭代码 {{code}}：{{reason}}",
+    reconnectButton: "重新连接",
+    clearButton: "清屏",
+    noSession: "没有可用于认证控制台的会话令牌。请退出后重新登录。",
+    failedHint:
+      "浏览器不会说明 WebSocket 握手为何失败。被拒绝的会话令牌，以及过旧、不支持该端点的守护进程，在这里都表现为一次没有原因的关闭。",
+    inputNote:
+      "点击终端即可输入。按键会原样发送到模块，不附加任何内容——包括 Ctrl-C、Tab 补全和方向键。",
+    ariaTerminal: "节点 {{nodeId}} 的串口控制台",
+    restTitle: "面向行的替代方式",
+    restIntro: "同一个 UART 也可以通过普通 HTTP 访问，无需 WebSocket：",
+    restRead: "返回该节点完整的 16 KiB 缓冲区。",
+    restWrite: "写入一行。",
+    restCrlf:
+      "写入端总是追加 CRLF，因此无法发送单独的控制字符：没有 Ctrl-C，没有 Tab 补全，也没有方向键。在 shell 脚本里它是对的工具，面对引导提示符时则不是。",
   },
   usb: {
     header: "USB 路由",
