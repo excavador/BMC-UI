@@ -166,6 +166,28 @@ const translations = {
     },
   },
   firmwareUpgrade: {
+    firmwareSlots: "固件槽位",
+    slotRunning: "运行中",
+    slotRollback: "回滚",
+    slotVolumeId: "id {{id}}",
+    slotVersionUnreadable: "版本无法读取",
+    slotMissing: "未报告",
+    slotNextboot: "下次启动",
+    slotStaged: "已暂存更新",
+    slotStagedYes: "是",
+    slotStagedNo: "否",
+    slotStagedUnknown: "无法读取",
+    slotStagedTitle: "已暂存一次更新",
+    slotStagedDescription:
+      "下次重启将启动另一个槽位。在此之前，主板仍运行下方列出的固件。",
+    slotPromotion: "上次提升",
+    slotsUnavailable: "此 BMC 守护进程不报告固件槽位。",
+    slotsAbsent:
+      "该主板未报告 A/B 固件布局，因此没有第二个槽位，也没有可回滚的目标。",
+    slotRollbackNote:
+      "回滚卷未挂载，因此在运行中的系统上无法读取它的版本。卷名和大小是主板对它的全部报告。",
+    slotPromotionNote:
+      "提升是主板自身启动检查在上次启动时给出的结论。一块未通过检查并自行退回上一版固件的主板，只会在这里说明这一点。",
     header: "升级 BMC 固件",
     fileInput: ".tpu 文件（远程或本地）：",
     shaInput: "SHA-256（可选）：",

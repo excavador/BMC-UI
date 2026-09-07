@@ -176,6 +176,28 @@ const translations = {
     },
   },
   firmwareUpgrade: {
+    firmwareSlots: "Firmware-Slots",
+    slotRunning: "Laufend",
+    slotRollback: "Rollback",
+    slotVolumeId: "id {{id}}",
+    slotVersionUnreadable: "Version nicht lesbar",
+    slotMissing: "nicht gemeldet",
+    slotNextboot: "Nächster Start",
+    slotStaged: "Update vorgemerkt",
+    slotStagedYes: "ja",
+    slotStagedNo: "nein",
+    slotStagedUnknown: "nicht lesbar",
+    slotStagedTitle: "Ein Update ist vorgemerkt",
+    slotStagedDescription:
+      "Der nächste Neustart startet den anderen Slot. Bis dahin läuft auf dem Board weiterhin die unten aufgeführte Firmware.",
+    slotPromotion: "Letzte Übernahme",
+    slotsUnavailable: "Dieser BMC-Daemon meldet keine Firmware-Slots.",
+    slotsAbsent:
+      "Dieses Board meldet kein A/B-Firmware-Layout, es gibt also keinen zweiten Slot und nichts, wohin zurückgerollt werden könnte.",
+    slotRollbackNote:
+      "Das Rollback-Volume ist nicht eingebunden, daher kann seine Version auf einem laufenden System nicht gelesen werden. Das Volume und seine Größe sind alles, was das Board darüber meldet.",
+    slotPromotionNote:
+      "Die Übernahme ist das Urteil der bordeigenen Startprüfung beim letzten Start. Ein Board, das seine Prüfungen nicht bestanden hat und auf die vorherige Firmware zurückgekehrt ist, sagt das hier und sonst nirgends.",
     header: "BMC-Firmware aktualisieren",
     fileInput: ".tpu-Datei (Remote oder lokal):",
     shaInput: "SHA-256 (optional):",

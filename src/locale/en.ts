@@ -170,6 +170,28 @@ const translations = {
     },
   },
   firmwareUpgrade: {
+    firmwareSlots: "Firmware Slots",
+    slotRunning: "Running",
+    slotRollback: "Rollback",
+    slotVolumeId: "id {{id}}",
+    slotVersionUnreadable: "version not readable",
+    slotMissing: "not reported",
+    slotNextboot: "Next boot",
+    slotStaged: "Update staged",
+    slotStagedYes: "yes",
+    slotStagedNo: "no",
+    slotStagedUnknown: "could not be read",
+    slotStagedTitle: "An update is staged",
+    slotStagedDescription:
+      "The next reboot will start the other slot. Until then the board keeps running the firmware listed below.",
+    slotPromotion: "Last promotion",
+    slotsUnavailable: "This BMC daemon does not report firmware slots.",
+    slotsAbsent:
+      "This board does not report an A/B firmware layout, so there is no second slot and nothing to roll back to.",
+    slotRollbackNote:
+      "The rollback volume is not mounted, so its version cannot be read from a running system. The volume and its size are everything the board reports about it.",
+    slotPromotionNote:
+      "Promotion is the verdict the board's own health gate reached the last time it booted. A board that failed its checks and put itself back on the previous firmware says so here and nowhere else.",
     header: "Upgrade BMC firmware",
     fileInput: ".tpu file (remote or local):",
     shaInput: "SHA-256 (optional):",

@@ -47,6 +47,68 @@ export interface FlashStatus {
   Error?: string;
 }
 
+/**
+ * One half of the board's A/B firmware layout, as `type=firmware_slots`
+ * reports it.
+ *
+ * `version` is null whenever the version cannot be read rather than whenever
+ * it is empty, and on the rollback slot that is the normal case: the volume
+ * is not mounted, so nothing on the board can open the file that carries it.
+ * The volume name and its size are what is left, and they are what gets
+ * rendered -- a guessed version on the slot a rollback would land on is the
+ * one number in this panel that must never be invented.
+ */
+export interface FirmwareSlot {
+  /** The UBI volume name, e.g. "rootfs" or "rootfs_prev". */
+  volume: string;
+  volume_id: number;
+  /** Null when the volume could not be read, not when it is blank. */
+  version: string | null;
+  size_bytes: number;
+}
+
+/**
+ * The verdict the board's boot-time health gate reached the last time it
+ * promoted a slot: when it ran, and what it decided.
+ *
+ * `timestamp` arrives as the board's own `date(1)` output rather than as
+ * ISO 8601, so it is rendered verbatim. Handing that string to `new Date()`
+ * would print "Invalid Date" on any engine that parses it differently, and
+ * the board's own words are more use here than a reformatting of them.
+ */
+export interface FirmwarePromotion {
+  timestamp: string;
+  message: string;
+}
+
+/** What the daemon sends. Every key is allowed to be missing. */
+interface FirmwareSlotsWire {
+  running?: FirmwareSlot | null;
+  rollback?: FirmwareSlot | null;
+  update_staged?: boolean | null;
+  nextboot?: string | null;
+  present?: boolean | null;
+  last_promotion?: FirmwarePromotion | null;
+}
+
+/**
+ * The A/B firmware state, normalised so every field is answerable.
+ *
+ * `update_staged` is a three-valued field on purpose. True means the next
+ * reboot switches slots; false means it does not; **null means the boot
+ * environment could not be read**, which is not the same claim and must not
+ * be drawn as "no". A panel that renders a failed read as a reassuring "no"
+ * is how a board reboots into firmware nobody expected.
+ */
+export interface FirmwareSlotsResponse {
+  running: FirmwareSlot | null;
+  rollback: FirmwareSlot | null;
+  update_staged: boolean | null;
+  nextboot: string | null;
+  present: boolean;
+  last_promotion: FirmwarePromotion | null;
+}
+
 interface InfoTabResponse {
   ip: { device: string; ip: string; mac: string }[];
   storage: { name: string; total_bytes: number; bytes_free: number }[];
@@ -267,6 +329,57 @@ export function useFirmwareStatusQuery(enabled: boolean) {
     },
     refetchInterval: 1000, // Refetch every 1 second
     enabled, // Enable/disable the query based on the provided boolean value
+  });
+}
+
+/**
+ * Which firmware slot is running, and what a rollback would land on.
+ *
+ * `type=firmware_slots` is new in our bmcd fork, so this is a plain
+ * `useQuery` for the reason the switch and thermal panels are: a suspense
+ * query that throws takes the whole route to its error component, and on this
+ * route that would mean losing the upload form -- the one control the page
+ * exists for -- because a status panel could not be filled in.
+ *
+ * Polled at ten seconds rather than the five the Info page uses. Slot state
+ * moves at the pace of a flash or a reboot, not of a fan, and the one
+ * transition worth catching from this page is `update_staged` turning true
+ * once an upload finishes writing. Ten seconds catches that well inside the
+ * time it takes to read the panel, on a board with 116 MB of RAM that is
+ * being asked to write firmware at the same moment.
+ *
+ * Missing keys are normalised rather than trusted. `present` in particular
+ * falls back to the evidence -- a running slot is what an A/B layout looks
+ * like -- because the panel must neither invent slots nor hide ones the
+ * daemon actually sent.
+ */
+export function useFirmwareSlotsQuery() {
+  const api = useAxiosWithAuth();
+
+  return useQuery({
+    queryKey: ["firmwareSlots"],
+    queryFn: async () => {
+      const response = await api.get<APIResponse<FirmwareSlotsWire>>("/bmc", {
+        params: {
+          opt: "get",
+          type: "firmware_slots",
+        },
+      });
+      const result = response.data.response[0].result;
+      return {
+        running: result.running ?? null,
+        rollback: result.rollback ?? null,
+        update_staged: result.update_staged ?? null,
+        nextboot: result.nextboot ?? null,
+        present: result.present ?? Boolean(result.running),
+        last_promotion: result.last_promotion ?? null,
+      } satisfies FirmwareSlotsResponse;
+    },
+    // Stop polling once it has failed: an older daemon answers the same way
+    // in ten seconds' time, and a panel reporting its own absence has no
+    // reason to keep asking.
+    refetchInterval: (query) => (query.state.error ? false : 10000),
+    retry: false,
   });
 }
 
