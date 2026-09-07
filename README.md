@@ -22,11 +22,22 @@ checked", not as "what the board does".
 
 The display bugs behind it *were* observed on hardware — the first three on
 firmware `v2.2.0-unstable-hive.5`, the rest on `v2.2.0-unstable-hive.7` — and
-that is where they came from. None of the fixes has been. Neither has the
-switch panel, which is the one piece here that displays something no version
-of this interface has shown before: it is written against the documented
-shape of bmcd's `type=network` response and a description of what that board
-currently reports, not against a response this code has parsed.
+that is where they came from. None of the fixes has been. Neither have the two
+pieces here that display something no version of this interface has shown
+before: the switch panel, written against the documented shape of bmcd's
+`type=network` response, and the board temperature, written against
+`type=thermal` while that endpoint is still being implemented. Both are
+written to a described response shape and a description of what the board
+reports, not against a response this code has parsed.
+
+The fan card is a third case and worth separating out, because the facts it
+rests on **were** measured on the board, on firmware
+`v2.2.0-unstable-hive.8` — the SoC reading about 52 °C, the fan sitting at
+step 4 of 6, `cooling-levels = <0 16 32 64 102 170 254>` in the device tree,
+and a manual set to maximum that returned `{"result":"ok"}`, read back as 6 of
+6, and was back at 4 of 6 eight seconds later. Those are hardware
+observations, and they are why the card was rewritten. The card that reports
+them has still never run on the board.
 
 That the doubled `v` needed fixing twice is the argument for reading this
 section literally. The first pass fixed it where it had been noticed, four
@@ -43,6 +54,9 @@ a real check and it is not the same as having looked.
 | **The board model has no trailing padding** | `board_model` is a fixed-width EEPROM field and bmcd forwards it byte for byte, so `TuringPi2` arrives with seven NULs after it and the About row read `TuringPi2␀␀␀␀␀␀␀ (v2.5.2)` with the revision pushed out of line. Not a daemon fix: those bytes have been identical for years and `tpi` parses the same JSON, so a trailing-NUL change there is a compatibility risk taken to move whitespace | Stripped for display only, NUL and U+FFFD both. The helper was exercised on the padded, replacement-character, all-padding, null and interior-space cases; not yet seen in a browser |
 | **The board serial is on the About page** | bmcd now sends `board_serial`. It is the number an asset register or a support conversation asks for, and until now the only way to read it off a running BMC was over SSH | A row under model and revision. Typed `string \| null`, because an unprogrammed board really does send null, and it renders the same dash an older daemon's missing key does |
 | **The switch ports are visible** | The Info page listed the BMC's own addresses and nothing about the six ports the compute modules hang off. A node port that never linked presents as a node you cannot reach while the BMC answers fine, which sends you looking in the wrong place. On the board as it stands, `ge1` is down and no page in this interface says so | A new panel, [described below](#the-switch-panel-in-detail). Built and linted clean, translation keys present in all six locales, helper behaviour exercised in isolation — but **the panel has never received a real response**; see the panel section for exactly what that leaves unverified |
+| **The board temperature is on the Info page** | Until this week no Turing Pi 2 could measure its own temperature: the SoC thermal sensor was missing from every device tree, so the fan ran flat out with nothing to regulate against. The sensor and a fan curve exist now and the SoC reads about 52 °C — and the interface showed a fan percentage and no temperature anywhere. A reader looks for it beside the fan, because the fan is what it drives | A `type=thermal` query feeding the Fan Control card, [described below](#the-temperature-and-the-fan-in-detail). Built and linted clean, keys in all six locales, the empty-list and unreadable-sensor paths written before the happy path — but **the card has never received a real response**: the endpoint is being implemented in parallel with this |
+| **The fan reads `4 of 6`, not `67%`** | The percentage was wrong twice over. It was `Math.round(state / max_state * 100)` — the step *index* as a fraction — so step 4 of 6 printed as 67 %; and the steps are not evenly spaced, so the real duty at step 4 is 102/254, about 40 %. The number on screen matched neither, and its continuous look invited the reader to believe a seven-position fan could sit anywhere between them | A segmented bar, one filled segment per step, with the step in words beside it. The duty cycle is deliberately **not** shown: the levels table lives in the device tree and no endpoint reports it, so a percentage here would be one board's device tree hardcoded into the interface and presented as a measurement |
+| **Automatic fan control is visible** | Firmware hive.8 added a thermal cooling-map, so `step_wise` re-asserts the fan from the temperature every polling interval. Setting the fan through the existing API returns success, reads back correctly, and is silently undone about eight seconds later. A control that reports success and does nothing is worse than no control | The slider is **kept and still works** — on firmware without a cooling-map it is the only fan control there is. What changed is that the card stops hiding the governor: an `automatic` marker on the heading, a standing note that a setting here is an override, and — when a poll that finished *after* a commit disagrees with it — a warning naming the step the board went back to. The slider is what was asked for; the segments are what the fan is doing |
 | **Fonts: 669 KB → 176 KB** | Fonts were 45 % of the bundle on a board with 128 MB of flash, and most of them could not be drawn on any screen this interface renders | See below |
 | **A release pipeline** | The firmware pins the UI tarball by sha256 and needs somewhere to fetch it from that is not a dormant upstream | Packaging dry-run against a real build: the tarball unpacks to `dist/`, `sha256sum -c SHA256SUMS` passes, two runs are byte-identical. Nothing has been tagged |
 | **`LICENSE` ships inside the tarball** | Upstream's asset omits it while our `.mk` declares `BMC_UI_LICENSE_FILES = LICENSE`, so Buildroot has been looking for a file that was never there. We redistribute a GPL-2.0 work on a device | Buildroot extracts with `--strip-components=1`, so `dist/LICENSE` is exactly where that variable resolves |
@@ -245,6 +259,180 @@ which ship in the main chunk because `src/locale/` is imported eagerly by
 `i18n.ts`; the CSS is the utilities the panel's classes pull in. Both tarball
 figures were taken with the same fixed `mtime`, so they are comparable to each
 other rather than to the number recorded in the previous section.
+
+## The temperature and the fan, in detail
+
+`GET /api/bmc?opt=get&type=thermal` is new in our bmcd fork and is being
+implemented in parallel with this. It answers with two lists:
+
+```json
+{"response":[{"result":{"sensors":[
+  {"name":"bmc-thermal","temperature_c":52.5,"present":true}
+],"cooling":[
+  {"name":"pwm-fan","cur_state":4,"max_state":6,"present":true}
+]}}]}
+```
+
+Both go into the Info page's **Fan Control** card, which until now showed a
+slider and a percentage and no temperature at all. That is the right place for
+it: the fan is the thing the temperature drives, and a reader who sees
+`52.5 °C` above `pwm-fan 4 of 6` understands the machine, where one who sees
+`67 %` alone does not.
+
+### Empty is not zero
+
+**Both lists are allowed to be empty, and empty is not an error.** It is the
+correct answer from any board or firmware older than this week, and it means
+*cannot measure* — which is a different fact from 0 °C and must not be drawn
+as a reading. The card has four states and they say four different things:
+
+| state | rendering |
+|---|---|
+| the request failed | one muted line: this daemon does not report board temperature. The rest of the card, including the fan slider, carries on |
+| `sensors` empty | one muted line: this board reports no thermal sensor, so there is no temperature to read, and the fan runs at whatever it was last set to with nothing to regulate against |
+| a sensor with `present: false`, or a `temperature_c` that is not a finite number | that sensor's row reads *not detected*, in amber. A daemon that sends null for a sensor it could not read must not produce `0.0 °C` or `NaN °C` on a page whose only job is to say whether the board is hot |
+| a present sensor | `52.5 °C`, one decimal, from `toFixed(1)` so a daemon that sends `52` still renders `52.0 °C` |
+
+Neither empty state is drawn as an alarm. That is the deliberate difference
+from the switch panel, where zero ports **is** an alarm: a board with no
+switch ports has every compute module cut off, whereas a board with no thermal
+sensor is every Turing Pi 2 that has ever shipped.
+
+### The fan, as steps
+
+The old readout was `Math.round(speed / max_speed * 100)` with a percent sign.
+It was wrong in two independent ways:
+
+- it is the step **index** as a fraction of the highest index, so state 4 of 6
+  printed as 67 %;
+- the steps are not evenly spaced. The device tree declares
+  `cooling-levels = <0 16 32 64 102 170 254>` — seven discrete PWM duty
+  values — so state 4 is a duty of 102/254, about **40 %**.
+
+The number on screen matched neither the index nor the duty nor the airflow,
+and a continuous-looking percentage invited the reader to believe a fan with
+seven fixed positions could sit anywhere between them.
+
+It is now a segmented bar: six segments for states 1–6, filled up to the
+current step, all empty at state 0, with `4 of 6` beside it. **The duty cycle
+is not shown.** It could only come from the `cooling-levels` table, that table
+lives in the device tree, and no endpoint reports it — so printing a
+percentage here would mean hardcoding one board's device tree into the
+interface and presenting it as a measurement. The step is the truthful number
+and it is the only one this interface can actually know.
+
+### The governor, and a control that used to lie
+
+Firmware `v2.2.0-unstable-hive.8` added a thermal cooling-map, so the kernel's
+`step_wise` governor re-asserts the fan from the temperature on every polling
+interval. On the board, setting the fan to maximum through the existing API
+returned `{"result":"ok"}`, read back as 6 of 6 immediately — and was back at
+4 of 6 eight seconds later. The slider appeared to work, reported success, and
+was quietly reverted.
+
+**The slider is kept.** On firmware without a cooling-map — which is every
+Turing Pi 2 before this week, and upstream's firmware today — it is the only
+fan control there is, and removing it would break boards to fix a board.
+What changed is that the card stops hiding what happens next:
+
+| treatment | what it rests on |
+|---|---|
+| an `automatic` marker beside the **Fan Control** heading, and a note that a setting here is an override the governor undoes at its next poll | an **inference**. A sensor the board can read plus a cooling device the thermal layer reports are what a governor needs, but whether the device tree maps one to the other is not something any endpoint says. So it is worded as a standing condition, not as a claim about this instant |
+| a warning naming the step the board went back to, and the step it was set to | a **measurement**. A commit is recorded with its timestamp; a thermal poll that finished *after* it and disagrees with it is the evidence. `dataUpdatedAt` supplies the ordering, so no timer is involved and the immediate read-back that still shows the new value cannot trigger it |
+| the segments read `cur_state` from the polled response; the slider is left uncontrolled, so its thumb stays where it was put | the two are deliberately not synchronised. The slider is what was **asked for**, the segments are what the fan is **doing**, and watching them disagree is the whole point |
+
+Everything else is the page's own furniture: `TableItem` rows in a `dl`, the
+`bg-neutral-900 dark:bg-neutral-100` fill and `bg-neutral-100
+dark:bg-neutral-800` track the `Progress` and `Slider` components already use,
+the muted lowercase label from the switch panel, the bordered alert box with
+the `TriangleAlert` icon the switch panel introduced — in amber rather than
+red, because a governor doing its job is news and not a fault. No new
+dependency and no new styling idiom. All ten new strings go through
+`src/locale/`, in all six locales.
+
+Like the switch ports, the query is a plain `useQuery` rather than a
+`useSuspenseQuery`, and it polls at five seconds. Both for the reasons the
+switch panel gives: `type=thermal` exists only in our fork, so a suspense
+query that threw would take the whole Info route to its `errorComponent` and
+lose storage, addresses and the reboot buttons because a temperature was
+unavailable; and a fan step read once when the tab opened is exactly the
+number the governor is about to change.
+
+### What the fan card leaves unverified
+
+The hardware facts behind it were measured on the board. The code was not run
+there. What was checked:
+
+- `tsc -b` and `eslint .` clean, and the build emits the card in the Info
+  chunk.
+- The ten new keys exist in all six locale files, and every `t("…")` key used
+  anywhere in `src/` — 146 of them — resolves in `en.ts`. That is a script
+  over the tree, not a reading.
+
+What was not:
+
+- **No rendered check.** Not in a browser, not in a snapshot. The segments,
+  the two-line fan row, the amber alert, how six segments and a slider wrap on
+  a phone: all of it is build-output reasoning.
+- **The card has never parsed a `type=thermal` response,** live or recorded.
+  The endpoint is being written in parallel; this is coded to the shape above
+  and nothing has confirmed the shape by answering.
+- **The revert warning has never fired.** The behaviour it reports was
+  observed on the board through other means, but no run of this code has seen
+  a poll disagree with a commit.
+- **`temperature_c` is not validated beyond `Number.isFinite`.** A daemon that
+  sent degrees Fahrenheit, or millidegrees, would render a plausible-looking
+  wrong number. Nothing here can tell.
+- **No thresholds.** Nothing colours the temperature as hot, because nothing
+  here knows what hot is for this SoC. 52 °C is one reading on one board and
+  is not a scale.
+- **A user-visible behaviour change.** The percentage is gone. Anyone who was
+  reading `67%` will now read `4 of 6` and a bar with four of six segments
+  filled. That is the same fan, described correctly for the first time, but it
+  is a different screen and it will be noticed.
+- **The five non-English locales were written without a native reviewer**, as
+  before.
+
+### Temperature pass: proof it still builds
+
+The same battery, from an empty `node_modules`: `devbox run -- npm ci && npm
+run lint && npm run build` clean, `npm audit` still **zero**, `eslint .` back
+to the same 3 warnings and 0 errors, `git status` clean after a build —
+`routeTree.gen.ts` does not move, because this adds no route. **Two
+consecutive builds are byte-identical across all 32 files**, which is the
+assertion the sha256-pinned tarball rests on.
+
+The hand-rolled font pipeline is untouched, and measured rather than assumed:
+
+| assertion | before | after |
+|---|---|---|
+| `@font-face` rules in `dist/` | 6 | **6** |
+| `url()` references | 6 | **6** |
+| `.woff2` files shipped | 6 | **6** |
+| bare `.woff` references | 0 | **0** |
+| every `url()` target present in `dist/` | yes | **yes** |
+| the six `.woff2` files, byte for byte | — | **all six unchanged** |
+
+The two logo SVGs are byte-identical as well. `index.html` is the same 1,973
+bytes and differs only in the content hashes it points at.
+
+| | with the panels | with the temperature |
+|---|---|---|
+| total `dist/` | 1,092,645 B, 32 files | **1,101,301 B, 32 files** |
+| JS | 841,359 B (21 files) | 849,499 B (21 files) |
+| CSS | 47,956 B | 48,472 B |
+| fonts | 179,976 B (6 `.woff2`) | 179,976 B (6 `.woff2`) |
+| SVG | 21,355 B (2 logos) | 21,355 B |
+| `index.html` | 1,973 B | 1,973 B |
+| release tarball | 463,891 B | **465,628 B** |
+
+**+8,656 B, +0.79 %.** 8,140 B of it is JS — the card plus sixty new
+translation strings across six locales, all of which ship in the main chunk
+because `src/locale/` is imported eagerly by `i18n.ts` — and 516 B is the CSS
+utilities the segmented bar and the amber alert pull in. Both tarball figures
+were taken here with the same fixed `mtime`, so they are comparable to each
+other; neither is comparable to the figure recorded in the previous section,
+which used a different one.
 
 ## Dependencies
 
