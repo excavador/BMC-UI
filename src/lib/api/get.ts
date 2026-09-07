@@ -522,7 +522,7 @@ export function useCoolingDevicesQuery() {
  * `useQuery`, not `useSuspenseQuery`, for the same reason the switch panel
  * is one: `type=thermal` exists only in our bmcd fork, and a suspense query
  * that throws takes the whole Info route to its `errorComponent` -- storage,
- * fans, addresses and the reboot buttons vanishing because a temperature was
+ * board health and the reboot buttons vanishing because a temperature was
  * unavailable. The card degrades to one line of prose instead.
  *
  * Polled at five seconds, because a temperature read once when the tab was
@@ -570,21 +570,6 @@ export function useThermalQuery() {
   });
 }
 
-/**
- * Switch port state.
- *
- * `useQuery`, not `useSuspenseQuery` like the rest of this file, on purpose.
- * `type=network` is new in our bmcd fork, so an older daemon answers it with
- * an error -- and a suspense query that throws takes the whole Info route to
- * its `errorComponent`, losing storage, fans, addresses and the reboot
- * buttons along with the panel. A panel that reports its own absence is worth
- * more than one that takes the page down with it.
- *
- * Polled, unlike the other Info queries, because link state is the point:
- * a panel showing an uplink that came back three minutes ago as still down is
- * worse than no panel. Five seconds is slow enough to be free on a BMC and
- * fast enough that a cable pull is visible before you reach for the page.
- */
 /**
  * How the BMC itself is doing: uptime, load, memory, NAND and the clock.
  *
@@ -638,6 +623,26 @@ export function useHealthQuery() {
   });
 }
 
+/**
+ * Switch port state.
+ *
+ * `useQuery`, not `useSuspenseQuery` like the rest of this file, on purpose.
+ * `type=network` is new in our bmcd fork, so an older daemon answers it with
+ * an error -- and a suspense query that throws takes the whole Network route
+ * to its `errorComponent`, losing the BMC's own addresses and the Reset
+ * Network button along with the panel. A panel that reports its own absence
+ * is worth more than one that takes the page down with it.
+ *
+ * Polled, unlike the other queries in this file, because link state is the
+ * point: a panel showing an uplink that came back three minutes ago as still
+ * down is worse than no panel. Five seconds is slow enough to be free on a
+ * BMC and fast enough that a cable pull is visible before you reach for the
+ * page.
+ *
+ * The Nodes page reads this same cached query for its per-node link state,
+ * which is why the key stays `switchPorts` rather than being named after
+ * either page.
+ */
 export function useSwitchPortsQuery() {
   const api = useAxiosWithAuth();
 

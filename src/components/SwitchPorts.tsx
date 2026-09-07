@@ -31,22 +31,22 @@ function PortStatus({ port }: { port: SwitchPort }) {
   if (!port.present) {
     return (
       <span className="font-semibold text-red-600 dark:text-red-400">
-        {t("info.switchPortAbsent")}
+        {t("network.switchPortAbsent")}
       </span>
     );
   }
 
   const duplex =
     port.duplex === "full"
-      ? t("info.switchPortDuplexFull")
+      ? t("network.switchPortDuplexFull")
       : port.duplex === "half"
-        ? t("info.switchPortDuplexHalf")
+        ? t("network.switchPortDuplexHalf")
         : port.duplex;
 
   const rate = [
     port.speed_mbps === null
       ? null
-      : t("info.switchPortSpeed", { speed: port.speed_mbps }),
+      : t("network.switchPortSpeed", { speed: port.speed_mbps }),
     duplex,
   ]
     .filter(Boolean)
@@ -57,10 +57,10 @@ function PortStatus({ port }: { port: SwitchPort }) {
   return (
     <div className="flex flex-wrap justify-end gap-x-3 lg:justify-start">
       {port.link ? (
-        <span className="font-semibold">{t("info.switchPortUp")}</span>
+        <span className="font-semibold">{t("network.switchPortUp")}</span>
       ) : (
         <span className="font-semibold text-amber-600 dark:text-amber-500">
-          {t("info.switchPortDown")}
+          {t("network.switchPortDown")}
         </span>
       )}
       {port.link && rate !== "" && <span className="opacity-60">{rate}</span>}
@@ -68,14 +68,14 @@ function PortStatus({ port }: { port: SwitchPort }) {
         <span className="opacity-60">{port.operstate}</span>
       )}
       <span className="opacity-60">
-        {t("info.switchPortTraffic", {
+        {t("network.switchPortTraffic", {
           rx: human(port.rx_bytes),
           tx: human(port.tx_bytes),
         })}
       </span>
       {errors > 0 && (
         <span className="text-amber-600 dark:text-amber-500">
-          {t("info.switchPortErrors", {
+          {t("network.switchPortErrors", {
             rx: port.rx_errors,
             tx: port.tx_errors,
           })}
@@ -103,9 +103,9 @@ function PortsSkeleton() {
 /**
  * The on-board switch, port by port.
  *
- * The Info page already lists the BMC's own addresses, which say nothing
- * about the switch ports the nodes actually hang off. A downed uplink, or a
- * node port that never linked, has not been visible anywhere in this
+ * The Network page lists the BMC's own addresses above this, and they say
+ * nothing about the switch ports the nodes actually hang off. A downed
+ * uplink, or a node port that never linked, was not visible anywhere in this
  * interface, so the first symptom is a node that cannot be reached while the
  * BMC answers fine.
  *
@@ -121,19 +121,19 @@ export default function SwitchPorts() {
     ? [
         {
           key: "node",
-          label: t("info.switchNodePorts"),
+          label: t("network.switchNodePorts"),
           ports: ports.filter((port) => port.kind === "node"),
         },
         {
           key: "uplink",
-          label: t("info.switchUplinkPorts"),
+          label: t("network.switchUplinkPorts"),
           ports: ports.filter((port) => port.kind === "uplink"),
         },
         // A kind bmcd grows later still gets rendered rather than dropped
         // on the floor by a filter that only knows about two of them.
         {
           key: "other",
-          label: t("info.switchOtherPorts"),
+          label: t("network.switchOtherPorts"),
           ports: ports.filter(
             (port) => port.kind !== "node" && port.kind !== "uplink"
           ),
@@ -146,23 +146,25 @@ export default function SwitchPorts() {
 
   return (
     <div>
-      <div className="mb-6 text-lg font-bold">{t("info.switchPorts")}</div>
+      <div className="mb-6 text-lg font-bold">{t("network.switchPorts")}</div>
 
       {isPending && <PortsSkeleton />}
 
       {isError && (
-        <p className="text-sm opacity-60">{t("info.switchPortsUnavailable")}</p>
+        <p className="text-sm opacity-60">
+          {t("network.switchPortsUnavailable")}
+        </p>
       )}
 
       {(unprobed || empty) && (
         <div className="mb-6 flex items-start gap-3 rounded-md border border-red-500 bg-red-500 p-4 text-neutral-100 dark:border-red-900 dark:bg-red-900">
           <TriangleAlert className="mt-0.5 size-5 shrink-0" />
           <div className="text-sm">
-            <p className="font-semibold">{t("info.switchNotProbed")}</p>
+            <p className="font-semibold">{t("network.switchNotProbed")}</p>
             <p className="mt-1">
               {empty
-                ? t("info.switchNoPorts")
-                : t("info.switchNotProbedDescription")}
+                ? t("network.switchNoPorts")
+                : t("network.switchNotProbedDescription")}
             </p>
           </div>
         </div>
