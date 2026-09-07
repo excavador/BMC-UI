@@ -93,6 +93,10 @@ exactly the same bytes:
 | SVG | 20.9 KB (2 logos) | 20.9 KB |
 | release tarball | 912,530 B (upstream's v3.3.6 asset) | **442,217 B** |
 
+Those are the figures for the font change itself, measured at the commit
+that made it. The dependency review below moved them; see
+[Dependencies](#dependencies) for what the build produces now.
+
 ### Not verified, and worth knowing
 
 - Node and module names are free text. A name typed in Cyrillic or Greek now
@@ -102,8 +106,134 @@ exactly the same bytes:
   is clean and the CSS was checked to contain six `@font-face` rules, six
   `url()` references, and no reference to any file that is not shipped — but
   that is a build-output check, not a visual one.
-- The JS bundle is untouched: 753 KB, one 649 KB chunk. It is now 76 % of the
-  output and the obvious next target, and Vite says so on every build.
+- The JS bundle was untouched by the font work: 753 KB, one 649 KB chunk (as
+  Vite counts it). The 2026-09-07 dependency review took it to 812 KB and one
+  698 KB chunk. It is now 77 % of the output and the obvious next target, and
+  Vite says so on every build.
+
+## Dependencies
+
+**Last reviewed: 2026-09-07.** This is a manual review, not automation —
+there is no Renovate or Dependabot configuration in this repo, so the date
+above is the whole of the freshness guarantee and it goes stale on its own.
+
+### What the review found
+
+`npm audit` reported **20 advisories: 2 critical, 13 high, 3 moderate, 2 low**.
+A raw count is the wrong way to read that, because this project's output is
+static files served by bmcd from `/srv/bmcd/www/` on an isolated management
+board. A flaw in the bundler runs on whoever builds the tarball; a flaw in
+what the bundle contains runs in the browser of whoever opens the BMC.
+
+| | packages | what it can reach |
+|---|---|---|
+| **runtime** — ships to the board | `axios` (high), `seroval` (critical, via `@tanstack/react-router`) | code executed in the browser against a live bmcd |
+| **build-time** — runs on the build machine | `tar`, `rollup`, `postcss`, `vite`, `nanoid`, `picomatch`, `browserslist`, `js-yaml`, `flatted`, `minimatch`, `brace-expansion`, `ajv`, `@babel/core`, `@humanfs/node`, `diff`, `form-data`, `follow-redirects`, `solid-js` | this repo's CI and a developer's workstation; nothing is served |
+
+So: **one advisory that matters on the board** — `axios`, a direct dependency,
+the thing that talks to bmcd, and below the fix line for a long list of
+prototype-pollution issues — and nineteen that are a supply-chain question
+about the build, not about the device. `seroval` is a critical, but it is a
+serializer that `@tanstack/react-router` uses for SSR; this is a client-only
+SPA, so its deserialisation RCE has no reachable entry point here.
+
+One trap in reading that table with npm's own tooling: `npm ls --omit=dev`
+puts `vite`, `rollup`, `postcss`, `tar`, `nanoid` and `picomatch` in the
+*production* tree, because upstream declares `tailwindcss` and
+`@tailwindcss/vite` under `dependencies`. npm's prod/dev split is not the
+runtime/build-time split that matters here.
+
+### What was applied
+
+Every patch and minor bump (`npm update`), plus `npm audit fix` **without**
+`--force`. No major was taken. `package.json` floors were rewritten to the
+versions actually installed and verified, so the declared range and the
+lockfile agree.
+
+`npm audit` now reports **zero**.
+
+Two things had to move with it. `@tanstack/router-vite-plugin` changed the
+order it emits `src/routeTree.gen.ts` in, and that file is generated but
+committed, so it was regenerated. prettier 3.9 and typescript-eslint 8.69
+reported three errors on source that was previously clean — two `extends`
+clauses reformatted, and `error.response && error.response.status === 401`
+rewritten as `error.response?.status === 401` — so `npm run lint` is back to
+zero errors and the Quality workflow will still pass.
+
+### Proof it still builds
+
+`devbox run -- npm ci && npm run lint && npm run build` is clean, and the font
+pipeline is intact — which is the regression worth catching, because a
+dependency bump that quietly reintroduces `.woff` or a dropped subset would
+undo the fonts work above without failing anything:
+
+| assertion | before | after |
+|---|---|---|
+| `@font-face` rules in `dist/` | 6 | **6** |
+| `url()` references | 6 | **6** |
+| bare `.woff` references | 0 | **0** |
+| `.woff2` references | 6 | **6** |
+| every `url()` target present in `dist/` | yes | **yes** |
+
+The bundle grew, and it is worth saying by how much rather than rounding it
+away:
+
+| | before | after |
+|---|---|---|
+| total `dist/` | 995.1 KB, 25 files | **1055.0 KB, 25 files** |
+| JS | 753.0 KB, largest chunk 634.2 KB | 812.5 KB, largest chunk 681.6 KB |
+| CSS | 44.2 KB | 44.5 KB |
+| fonts | 175.6 KB (6 `.woff2`) | 175.8 KB (6 `.woff2`) |
+| SVG | 20.9 KB | 20.9 KB |
+| release tarball | 442,217 B | 463,375 B |
+
+**+59.9 KB, +6.0 %.** All of it is JavaScript, and none of it is one
+regression — bisected by holding groups back and rebuilding, it is roughly
+24 KB from the app libraries (`@tanstack/react-query`, `i18next`,
+`react-i18next`, `axios`, `filesize`, `javascript-time-ago`,
+`tailwind-merge`), 15 KB from the eleven Radix primitives, 7 KB from React
+19.1 → 19.2, and 5 KB from `@tanstack/react-router`. That is what 39 minor
+releases of a UI stack cost. On a board with 128 MB of flash it is affordable;
+it is also a reminder that the 682 KB chunk is still the thing to fix.
+(Vite prints that chunk as `698.0 kB`, counting a kB as 1000 bytes; every
+figure in these tables is 1024.)
+
+The 112 B of font growth is real and not a pipeline change:
+`@fontsource/inter` 5.2.6 → 5.3.0 revised the two 700-weight subsets
+(`latin-700` 24,248 → 24,356 B, `latin-ext-700` 36,240 → 36,244 B). The
+400- and 600-weight files are byte-identical. So the claim further up that the
+six shipped files match the pre-trim build byte for byte now holds for four of
+the six.
+
+### Deliberately not taken
+
+These are majors. They are listed so a future reader can tell what was
+declined from what was missed; the decision on each is the owner's.
+
+| package | now | latest | what the major changes | judgement |
+|---|---|---|---|---|
+| `vite` | 7.3.6 | 8.2.2 | a major of the bundler that produces the shipped bytes | **The most tractable of these on paper.** Its `engines` (`^20.19.0 \|\| >=22.12.0`) allow Node 24, and every plugin here already declares `vite ^8` (`@vitejs/plugin-react-swc` 4.3.3, `@tailwindcss/vite` 4.3.3) or accepts it (`vite-plugin-svgr`: `vite >=3.0.0`). What makes it not a routine bump is the output: the firmware pins this tarball by sha256, and a bundler major changes chunking and can change the default browser baseline — which is the assumption dropping `.woff` rests on. Take it with a rebuild and the font assertions re-run, not as a version edit |
+| `eslint` | 9.39.5 | 10.10.0 | `engines` become `^20.19.0 \|\| ^22.13.0 \|\| >=24`; this repo is already on flat config | **Has a deadline.** 9.39.5 already prints `This version is no longer supported` on every install. `typescript-eslint` 8.69 and `eslint-plugin-react-hooks` 7 both declare `eslint ^10`, so the set can move together — but it must move together |
+| `eslint-plugin-react-hooks` | 5.2.0 | 7.1.1 | two majors; its peer range already lists `eslint ^10` | dev-only, but two majors of a lint plugin will report on components that pass today. Pairs with the eslint 10 move |
+| `eslint-plugin-simple-import-sort` | 12.1.1 | 14.0.0 | two majors of a rule whose whole job is ordering | dev-only, and it will rewrite every import block in the tree. Cheap but noisy — do it in its own commit |
+| `eslint-plugin-react-refresh` | 0.4.26 | 0.5.6 | pre-1.0, so `^0.4.26` treats it as a major | dev-only, low risk, no reason to rush. It only emits warnings here |
+| `globals` | 16.5.0 | 17.12.0 | one major of a data package listing environment globals | dev-only, low risk |
+| `prettier-plugin-tailwindcss` | 0.6.14 | 0.8.1 | pre-1.0, so `^0.6.14` held it; its job is ordering class names | dev-only, but a sort-order change reformats most JSX here. Same advice: its own commit |
+| `vite-plugin-svgr` | 4.5.0 | 5.2.0 | one major; its peer is only `vite >=3.0.0`, so it is not what blocks vite 8 | build-time. Two logos are the only SVGs, so the blast radius is small — but they are in the shipped output |
+| `i18next` | 25.10.10 | 26.4.2 | one major | **runtime.** Must move together with `react-i18next`, whose v17 declares `i18next >= 26.2.0` |
+| `react-i18next` | 15.7.4 | 17.0.13 | two majors; v17 requires `i18next >= 26.2.0` | **runtime**, and coupled to the row above — neither can be taken alone |
+| `lucide-react` | 0.539.0 | 1.42.0 | pre-1.0 to 1.x, which is why `^0.539.0` pinned it to 0.539.x and `npm update` could not move it at all | **runtime.** Its peer range still allows React 19, so the blocker is not React. Icons are tree-shaken into the shipped bundle, so every icon import has to be checked against the 1.x names |
+| `@types/node` | 24.13.3 | 26.5.0 | types for Node 26 | **declined on policy, not on risk.** The estate target is Node 24 and `devbox.json` pins `nodejs@24.12`; types for a runtime we do not run would only hide errors |
+
+### One thing this review did not fix
+
+`npm run build` runs `tsc -b`, but **`typescript` is not declared anywhere in
+`package.json`**. It resolves only as a transitive dependency of `i18next`,
+`react-i18next` and `typescript-eslint` — today that is 5.9.3. So the compiler
+version this hash-pinned artifact is type-checked with is decided by whichever
+transitive range happens to win, and could change under a bump that mentions
+none of it. Declaring it means choosing a version, which is a decision rather
+than a safe update, so it is recorded here instead of made.
 
 ## Building
 
