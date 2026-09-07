@@ -103,6 +103,9 @@ const translations = {
     healthAbsent: "not detected",
     healthUnavailable: "This BMC daemon does not report board health.",
     ariaMemoryUtilization: "Memory utilization",
+    fanDuty: "{{value}} % duty",
+    fanDutyNote:
+      "Duty is the PWM level the board's own cooling-levels table maps this step to, as the daemon reports that table. The step is the honest reading; the duty is what it commands. A board that reports no table shows the step alone.",
   },
   nodes: {
     header: "Control the power supply of connected nodes",

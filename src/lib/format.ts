@@ -130,3 +130,37 @@ export function offsetReading(seconds: number): OffsetReading | null {
     return { unit: "ms", value: (seconds * 1e3).toFixed(3) };
   return { unit: "us", value: (seconds * 1e6).toFixed(3) };
 }
+
+/**
+ * The PWM duty a cooling step actually commands, as a percentage.
+ *
+ * A fan's step is an index into the `cooling-levels` table its device tree
+ * declares, and those levels are not evenly spaced: `<0 16 32 64 102 170 254>`
+ * means step 4 is a duty of 102/254, about 40 %, and not the 67 % that
+ * dividing the index by the highest index gives. That is why this interface
+ * showed a step and refused a percentage -- the table was not reported by any
+ * endpoint, so a percentage would have been one board's device tree hardcoded
+ * into the browser. `type=thermal` reports it now, so the percentage can be
+ * computed from the board's own numbers.
+ *
+ * Null whenever it cannot be computed honestly, and every one of these checks
+ * is a way the arithmetic could otherwise produce a plausible wrong number:
+ * a missing table, a `max_level` of zero or less, a step that is not an index
+ * into the table, a level that is not finite, or a level above `max_level`,
+ * which would be a contradiction rather than a duty over 100 %.
+ */
+export function fanDutyPercent(
+  levels: number[] | null,
+  maxLevel: number | null,
+  step: number
+): number | null {
+  if (!Array.isArray(levels) || levels.length === 0) return null;
+  if (maxLevel === null || !Number.isFinite(maxLevel) || maxLevel <= 0)
+    return null;
+  if (!Number.isInteger(step) || step < 0 || step >= levels.length) return null;
+
+  const level = levels[step];
+  if (!Number.isFinite(level) || level < 0 || level > maxLevel) return null;
+
+  return Math.round((level / maxLevel) * 100);
+}

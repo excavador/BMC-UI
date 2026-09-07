@@ -10,6 +10,7 @@ import {
   useThermalQuery,
 } from "@/lib/api/get";
 import { useCoolingDeviceMutation } from "@/lib/api/set";
+import { fanDutyPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /**
@@ -31,6 +32,10 @@ interface FanRow {
   controllable: boolean;
   /** False only when `type=thermal` says the device is not there. */
   present: boolean;
+  /** The board's own cooling-levels table, or null when it reports none. */
+  levels: number[] | null;
+  /** The level that means full duty. Null when the table is unreadable. */
+  maxLevel: number | null;
 }
 
 /**
@@ -45,19 +50,27 @@ interface FanRow {
  * and a continuous-looking readout invited the reader to believe a fan with
  * seven positions could sit anywhere between them.
  *
- * One filled segment per step, and the step in words beside it. The duty
- * cycle is deliberately absent: the levels table lives in the device tree and
- * no endpoint reports it, so printing a percentage here would mean hardcoding
- * one board's device tree into the interface and calling it a measurement.
+ * One filled segment per step, and the step in words beside it. That stays the
+ * primary reading, because it is the honest one: the fan has seven positions
+ * and this is which of them it is in.
+ *
+ * The duty cycle now sits under it, quieter, and it is a measurement rather
+ * than an assumption. `type=thermal` reports the board's own `cooling-levels`
+ * table, so the percentage is computed from the numbers the board sent -- the
+ * objection that kept it off this card was that no endpoint reported the
+ * table, and that objection has been answered. When a board reports no table
+ * the step stands alone; a duty is never computed from a guessed one.
  */
 function StepBar({
   value,
   max,
   label,
+  valueText,
 }: {
   value: number;
   max: number;
   label: string;
+  valueText?: string;
 }) {
   return (
     <div
@@ -67,6 +80,7 @@ function StepBar({
       aria-valuemin={0}
       aria-valuemax={max}
       aria-valuenow={value}
+      aria-valuetext={valueText}
     >
       {Array.from({ length: max }, (_, index) => index + 1).map((step) => (
         <div
@@ -135,7 +149,9 @@ function ThermalSkeleton() {
  *
  * - **the temperature**, per sensor, or a line saying it cannot be measured;
  * - **the fan's step**, as segments and as "4 of 6", read from the polled
- *   `type=thermal` response -- what the fan is doing;
+ *   `type=thermal` response -- what the fan is doing -- with the PWM duty
+ *   that step commands underneath it, computed from the board's own
+ *   cooling-levels table now that the daemon reports one;
  * - **the slider**, unchanged as a control and still uncontrolled, so its
  *   thumb stays where it was put -- what was asked for.
  *
@@ -182,6 +198,11 @@ export default function FanControl() {
       setpoint: device.speed,
       controllable: true,
       present: reported ? reported.present : true,
+      // Only `type=thermal` carries the levels table. A fan `type=cooling`
+      // knows and `type=thermal` does not therefore shows a step and no duty,
+      // which is correct: nothing here has the table for it.
+      levels: reported?.levels ?? null,
+      maxLevel: reported?.max_level ?? null,
     };
   });
 
@@ -197,6 +218,8 @@ export default function FanControl() {
         setpoint: null,
         controllable: false,
         present: fan.present,
+        levels: fan.levels,
+        maxLevel: fan.max_level,
       });
     }
   }
@@ -217,6 +240,10 @@ export default function FanControl() {
   // it. dataUpdatedAt is the timestamp of the last successful thermal fetch,
   // so this needs no timer and cannot fire on the read-back that still shows
   // the new value.
+  const showGovernorNote = governed && rows.some((row) => row.controllable);
+  // The provenance note earns its space only where a duty is actually drawn.
+  const showDutyNote = rows.some((row) => row.levels !== null);
+
   const reverted = rows.filter((row) => {
     const sent = committed[row.name];
     return (
@@ -261,69 +288,88 @@ export default function FanControl() {
       </div>
 
       <div className="space-y-6">
-        {rows.map((row) => (
-          <div key={row.name} className="flex items-start justify-between">
-            <div className="w-1/4 font-semibold">{row.name}</div>
-            <div className="w-2/4 lg:w-3/4">
-              <div className="flex items-center gap-4">
-                {row.present && row.max > 0 ? (
-                  <>
-                    <StepBar
-                      value={row.live ?? row.setpoint ?? 0}
+        {rows.map((row) => {
+          // The step being drawn, and the duty of that same step -- not of the
+          // setpoint and not of anything else, so the two numbers beside each
+          // other always describe one position of one fan.
+          const step = row.live ?? row.setpoint ?? 0;
+          const duty = fanDutyPercent(row.levels, row.maxLevel, step);
+          const stepLabel = t("info.fanStep", { cur: step, max: row.max });
+
+          return (
+            <div key={row.name} className="flex items-start justify-between">
+              <div className="w-1/4 font-semibold">{row.name}</div>
+              <div className="w-2/4 lg:w-3/4">
+                <div className="flex items-center gap-4">
+                  {row.present && row.max > 0 ? (
+                    <>
+                      <StepBar
+                        value={step}
+                        max={row.max}
+                        label={t("info.ariaFanStep", { device: row.name })}
+                        valueText={
+                          duty === null
+                            ? stepLabel
+                            : `${stepLabel} · ${t("info.fanDuty", { value: duty })}`
+                        }
+                      />
+                      <div className="w-20 shrink-0 text-right">
+                        <div className="font-semibold">{stepLabel}</div>
+                        {duty !== null && (
+                          <div className="text-sm opacity-60">
+                            {t("info.fanDuty", { value: duty })}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <span className="font-semibold text-amber-600 dark:text-amber-500">
+                      {t("info.thermalAbsent")}
+                    </span>
+                  )}
+                </div>
+
+                {row.controllable && (
+                  <div className="mt-4 flex items-center gap-4">
+                    <Slider
+                      defaultValue={[row.setpoint ?? 0]}
+                      min={0}
                       max={row.max}
-                      label={t("info.ariaFanStep", { device: row.name })}
+                      onValueChange={(value) =>
+                        setRequested((previous) => ({
+                          ...previous,
+                          [row.name]: value[0],
+                        }))
+                      }
+                      onValueCommit={(value) => {
+                        setCommitted((previous) => ({
+                          ...previous,
+                          [row.name]: { step: value[0], at: Date.now() },
+                        }));
+                        mutateCoolingDevices({
+                          device: row.name,
+                          speed: value[0],
+                        });
+                      }}
                     />
-                    <span className="w-20 shrink-0 text-right font-semibold">
-                      {t("info.fanStep", {
-                        cur: row.live ?? row.setpoint ?? 0,
-                        max: row.max,
+                    <span className="w-20 shrink-0 text-right text-sm opacity-60">
+                      {t("info.fanRequested", {
+                        value: requested[row.name] ?? row.setpoint ?? 0,
                       })}
                     </span>
-                  </>
-                ) : (
-                  <span className="font-semibold text-amber-600 dark:text-amber-500">
-                    {t("info.thermalAbsent")}
-                  </span>
+                  </div>
                 )}
               </div>
-
-              {row.controllable && (
-                <div className="mt-4 flex items-center gap-4">
-                  <Slider
-                    defaultValue={[row.setpoint ?? 0]}
-                    min={0}
-                    max={row.max}
-                    onValueChange={(value) =>
-                      setRequested((previous) => ({
-                        ...previous,
-                        [row.name]: value[0],
-                      }))
-                    }
-                    onValueCommit={(value) => {
-                      setCommitted((previous) => ({
-                        ...previous,
-                        [row.name]: { step: value[0], at: Date.now() },
-                      }));
-                      mutateCoolingDevices({
-                        device: row.name,
-                        speed: value[0],
-                      });
-                    }}
-                  />
-                  <span className="w-20 shrink-0 text-right text-sm opacity-60">
-                    {t("info.fanRequested", {
-                      value: requested[row.name] ?? row.setpoint ?? 0,
-                    })}
-                  </span>
-                </div>
-              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {governed && rows.some((row) => row.controllable) && (
-        <p className="mt-6 text-sm opacity-60">{t("info.fanGovernorNote")}</p>
+      {(showGovernorNote || showDutyNote) && (
+        <div className="mt-6 space-y-2 text-sm opacity-60">
+          {showGovernorNote && <p>{t("info.fanGovernorNote")}</p>}
+          {showDutyNote && <p>{t("info.fanDutyNote")}</p>}
+        </div>
       )}
 
       {reverted.length > 0 && (

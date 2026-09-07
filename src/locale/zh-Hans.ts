@@ -103,6 +103,9 @@ const translations = {
     healthAbsent: "未检测到",
     healthUnavailable: "此 BMC 守护进程不报告主板状态。",
     ariaMemoryUtilization: "内存使用率",
+    fanDuty: "占空比 {{value}} %",
+    fanDutyNote:
+      "占空比是主板自身的 cooling-levels 表为该档位映射出的 PWM 值，取自守护进程报告的这张表。档位是诚实的读数，占空比是它实际下达的指令。未报告该表的主板只显示档位。",
   },
   nodes: {
     header: "控制连接节点的电源",

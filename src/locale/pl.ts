@@ -106,6 +106,9 @@ const translations = {
     healthAbsent: "nie wykryto",
     healthUnavailable: "Ten demon BMC nie zgłasza kondycji płyty.",
     ariaMemoryUtilization: "Wykorzystanie pamięci",
+    fanDuty: "{{value}} % wypełnienia",
+    fanDutyNote:
+      "Wypełnienie to wartość PWM, którą własna tablica cooling-levels płyty przypisuje temu stopniowi, tak jak zgłasza ją demon. Stopień to uczciwy odczyt; wypełnienie to to, co on wysterowuje. Płyta, która nie zgłasza tablicy, pokazuje sam stopień.",
   },
   nodes: {
     header: "Kontroluj zasilanie podłączonych węzłów",

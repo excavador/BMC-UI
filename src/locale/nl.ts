@@ -105,6 +105,9 @@ const translations = {
     healthAbsent: "niet gedetecteerd",
     healthUnavailable: "Deze BMC-daemon meldt geen boardconditie.",
     ariaMemoryUtilization: "Geheugengebruik",
+    fanDuty: "{{value}} % duty",
+    fanDutyNote:
+      "De duty cycle is de PWM-waarde die de eigen cooling-levels-tabel van het board aan deze stap koppelt, zoals de daemon die tabel meldt. De stap is de eerlijke aflezing; de duty is wat hij aanstuurt. Een board dat geen tabel meldt, toont alleen de stap.",
   },
   nodes: {
     header: "Stroomtoevoer van aangesloten nodes regelen",
