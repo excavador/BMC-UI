@@ -1,5 +1,5 @@
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import ConfirmationModal from "@/components/ConfirmationModal";
@@ -40,17 +40,11 @@ function FlashNode() {
   const {
     flashType,
     isFlashing,
-    statusMessage: _statusMessage,
+    statusMessage,
     nodeUpdateMutation,
     uploadProgress,
     handleNodeUpdate,
   } = useFlash();
-
-  const [statusMessage, setStatusMessage] = useState("");
-
-  useEffect(() => {
-    if (_statusMessage) setStatusMessage(_statusMessage);
-  }, [_statusMessage]);
 
   const handleSubmit = () => {
     if (formRef.current) {

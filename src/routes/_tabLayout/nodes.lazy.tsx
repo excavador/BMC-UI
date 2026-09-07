@@ -25,6 +25,29 @@ export const Route = createLazyFileRoute("/_tabLayout/nodes")({
 
 const POWER_CONFIRMATION_KEY = "skipNodeConfirmation";
 
+const ConfirmationCheckbox = (props: {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) => {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex items-center space-x-2 pt-4">
+      <Checkbox
+        id="skipConfirmation"
+        checked={props.checked}
+        onCheckedChange={(checked) => props.onCheckedChange(checked as boolean)}
+      />
+      <label
+        htmlFor="skipConfirmation"
+        className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+      >
+        {t("nodes.dontAskAgain")}
+      </label>
+    </div>
+  );
+};
+
 const NodeRow = (
   props: NodeInfoResponse & {
     nodeId: number;
@@ -107,24 +130,6 @@ const NodeRow = (
     });
   };
 
-  const ConfirmationCheckbox = () => (
-    <div className="flex items-center space-x-2 pt-4">
-      <Checkbox
-        id="skipConfirmation"
-        checked={tempSkipConfirmation}
-        onCheckedChange={(checked) =>
-          setTempSkipConfirmation(checked as boolean)
-        }
-      />
-      <label
-        htmlFor="skipConfirmation"
-        className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-      >
-        {t("nodes.dontAskAgain")}
-      </label>
-    </div>
-  );
-
   const handleCloseDialog = () => {
     setShowPowerDialog(false);
     setShowResetDialog(false);
@@ -204,7 +209,10 @@ const NodeRow = (
                 }
               )}
             </p>
-            <ConfirmationCheckbox />
+            <ConfirmationCheckbox
+              checked={tempSkipConfirmation}
+              onCheckedChange={setTempSkipConfirmation}
+            />
           </>
         }
         onConfirm={togglePower}
@@ -219,7 +227,10 @@ const NodeRow = (
             <p>
               {t("nodes.resetConfirmDescription", { nodeId: props.nodeId })}
             </p>
-            <ConfirmationCheckbox />
+            <ConfirmationCheckbox
+              checked={tempSkipConfirmation}
+              onCheckedChange={setTempSkipConfirmation}
+            />
           </>
         }
         onConfirm={resetNode}
