@@ -60,6 +60,17 @@ firmware upload that failed for want of it, five free NAND eraseblocks out of
 and those are why the panels were written. The panels themselves have never
 run.
 
+The Network tab is a sixth case and a different kind of one: it reads
+nothing new. It is the Info page's second half — the addresses and the switch
+panel — moved to a tab of its own, so every response it parses is a response
+this fork was already parsing. One thing here *was* rendered, for the first
+time in this fork: the switch panel, to a string, by `react-dom/server` under
+node with its query hook stubbed, on unprobed ports, an empty port list, a
+healthy board, a port with errors, an unknown port kind, and in each of the
+six locales. Its output is byte-identical before and after the move. That is
+the strongest check anything in this fork has had, and it is still not a
+browser and still not a board.
+
 That the doubled `v` needed fixing twice is the argument for reading this
 section literally. The first pass fixed it where it had been noticed, four
 rows on one page, and left the header printing `daemon vv2.2.0-unstable-hive.7`
@@ -84,6 +95,7 @@ a real check and it is not the same as having looked.
 | **The BMC's own health is on the Info page** | The Info page reported the user storage volume, the fan, the addresses and the switch, and nothing about the computer serving the page. That computer has 116 MB of RAM — a firmware upload has already failed on this machine for want of it — and five free NAND eraseblocks out of 2040. Neither number was reachable from a browser | Five rows from `type=health`, [described below](#board-health-in-detail). No threshold is invented: the memory bar reuses the Progress component's existing colouring and the NAND free count is not coloured at all. Built and linted clean, keys in all six locales; **never run against a board** |
 | **Nodes show power-on time and link state** | The Nodes page had a power toggle and two name fields and nothing about whether a module is alive. A node whose switch port never came up looked exactly like a healthy one | A line per node joining `type=node_info` and `type=network`, [described below](#node-liveness-in-detail). No new endpoint. An implausible `power_on_time` gets a quiet marker rather than being shown as fact, and the test for implausible is the BMC's own uptime rather than a heuristic. Built and linted clean; **never run against a board** |
 | **The fan shows its real duty** | The previous pass refused a percentage because the `cooling-levels` table was not reported by any endpoint. `type=thermal` reports it now, so step 4 of the board's `<0 16 32 64 102 170 254>` is a measured 102/254 rather than a belief about the hardware | The segmented `4 of 6` stays the primary reading and the duty goes underneath it, [described below](#the-fan-duty-now-that-it-is-a-measurement). `levels: null` falls back to the step alone. The helper was exercised directly on fifteen cases including every way the arithmetic could produce a plausible wrong number; **the card has still never parsed a real response** |
+| **Info is two pages** | The Info page had grown to six sections and was the longest in the interface: storage, board health, the fan, the addresses, the switch and the reboot buttons. Two unrelated questions in one scroll — what condition the board is in, and how it is connected — and connectivity was the half that had grown | A new `/network` tab carrying Network Interfaces and Switch Ports, [described below](#the-network-tab-in-detail). Nothing rewritten: the same component and the same JSX, relocated. The switch panel renders byte-identically before and after, checked by rendering it to a string in node across eight port states and six locales — but **still never in a browser and never against a board** |
 | **Fonts: 669 KB → 176 KB** | Fonts were 45 % of the bundle on a board with 128 MB of flash, and most of them could not be drawn on any screen this interface renders | See below |
 | **A release pipeline** | The firmware pins the UI tarball by sha256 and needs somewhere to fetch it from that is not a dormant upstream | Packaging dry-run against a real build: the tarball unpacks to `dist/`, `sha256sum -c SHA256SUMS` passes, two runs are byte-identical. Nothing has been tagged |
 | **`LICENSE` ships inside the tarball** | Upstream's asset omits it while our `.mk` declares `BMC_UI_LICENSE_FILES = LICENSE`, so Buildroot has been looking for a file that was never there. We redistribute a GPL-2.0 work on a device | Buildroot extracts with `--strip-components=1`, so `dist/LICENSE` is exactly where that variable resolves |
@@ -173,10 +185,12 @@ that made it. The dependency review below moved them; see
 
 `GET /api/bmc?opt=get&type=network` is new in our bmcd fork. It reports the
 six ports of the on-board switch — `node1`–`node4` carrying one compute
-module each, `ge0` and `ge1` as uplinks — and the Info page now renders all of
-them under **Switch Ports**, beside the BMC addresses it already listed. Each
-port arrives as `{name, kind, present, link, operstate, speed_mbps, duplex,
-rx_bytes, tx_bytes, rx_errors, tx_errors}`.
+module each, `ge0` and `ge1` as uplinks — and the [Network
+page](#the-network-tab-in-detail) renders all of them under **Switch Ports**,
+beneath the BMC addresses that moved there with them. Both panels were on the
+Info page when this was written. Each port arrives as `{name, kind, present,
+link, operstate, speed_mbps, duplex, rx_bytes, tx_bytes, rx_errors,
+tx_errors}`.
 
 | what is shown | when |
 |---|---|
@@ -197,15 +211,16 @@ The three port states are deliberately not styled alike:
 
 Zero ports at all is treated as that same alarm rather than as nothing to draw.
 
-**One deliberate departure from the rest of `get.ts`.** Every other Info query
-is a `useSuspenseQuery`, and a suspense query that throws takes the whole
-route to its `errorComponent` — storage, fans, addresses and the reboot
-buttons go with it. `type=network` exists only in our bmcd fork, so on an
-older daemon that is exactly what would happen. This one is a plain
-`useQuery` which renders a line of prose in its own space instead. It is also
-the only Info query that polls: five seconds, stopping once it has failed,
-because a link state read once when the tab was opened is the thing the panel
-exists to avoid.
+**One deliberate departure from the rest of `get.ts`.** Every other query on
+these two pages is a `useSuspenseQuery`, and a suspense query that throws
+takes the whole route to its `errorComponent` — on the Network page that is
+the addresses and the Reset Network button, and it was storage, the fan and
+the reboot buttons as well for as long as this panel sat on Info.
+`type=network` exists only in our bmcd fork, so on an older daemon that is
+exactly what would happen. This one is a plain `useQuery` which renders a line
+of prose in its own space instead. It is also the only query on either page
+that polls: five seconds, stopping once it has failed, because a link state
+read once when the tab was opened is the thing the panel exists to avoid.
 
 Everything else is the page's own furniture — `TableItem` rows inside a `dl`,
 the red from the toast's destructive variant, `filesize` with the `jedec`
@@ -1031,6 +1046,194 @@ these are the largest additions in the fork so far.
   mean a reader has to know what `UTC` in that string implies.
 - **The five non-English locales were written without a native reviewer**, as
   in every previous pass.
+
+## The Network tab, in detail
+
+Six sections had collected on the Info page, and against the board this fork
+is built for they rendered in this order: **User Storage** (the BMC and SD
+volumes, and the backup button), **Board Health** (uptime, load, memory, NAND,
+the clock, and a note about eraseblocks), **Fan Control** (the temperature,
+the fan's step, its duty, and two notes), **Network Interfaces** (`br0`, its
+address and MAC, and Reset Network), **Switch Ports** (six ports with link,
+speed and traffic each), and **BMC** (Reboot, Reload Daemon). That is two
+unrelated questions in one scroll — what condition the board is in, and how it
+is connected — and the connectivity half is the one that had grown, because
+the switch panel alone is six rows of four facts.
+
+| tab | sections |
+|---|---|
+| Info | User Storage, Board Health, Fan Control, BMC |
+| **Network** (new) | Network Interfaces, Switch Ports |
+
+**The tab sits second, between Info and Nodes.** It is next to the page it was
+cut out of, so a reader who goes to Info for the addresses finds them one tab
+along rather than hunting; and it is next to Nodes, because a node's link
+state *is* a switch port — the Nodes page already reads the same
+`useSwitchPortsQuery` for its per-node line. That also leaves the four tabs
+you read the board with — Info, Network, Nodes, Console — ahead of the three
+you act on it with, and About last where it was.
+
+**Moved, not forked.** `SwitchPorts.tsx` is the same file, imported by
+`network.lazy.tsx` instead of `info.lazy.tsx`; its diff is the `info.` →
+`network.` key prefix, one comment that named the wrong page, and one line
+prettier rewrapped. The interface list and its Reset Network button are the
+same JSX and the same handler, cut out of `info.lazy.tsx` and pasted into the
+new route unchanged apart from those same key prefixes. The address block of
+`skeletons/info.tsx` moved to a new `skeletons/network.tsx` the same way.
+
+**One query, two pages.** Both routes read `type=info` through
+`useInfoTabData` — the hook is named for the endpoint, not for the page, and
+react-query answers both from one cache entry, so splitting the page costs no
+second request. `useNetworkResetMutation` still invalidates `infoTabData`, so
+pressing Reset Network on the Network tab refreshes the storage bars on Info.
+
+**The strings moved with the panels.** Nineteen keys came out of the `info`
+namespace and into a new `network` one — the four interface strings and the
+fifteen switch strings — plus two new: `navigation.network` for the tab and
+`network.header` for the page heading. In all six locales: 241 keys become
+243, and the six files still carry exactly the same set. The one key that
+moved without a caller is `resetNetworkFailed`, which upstream defines and
+nothing has ever rendered; it moved rather than being quietly deleted, because
+removing dead strings is a different change from this one.
+
+### What the split deliberately does not touch
+
+The switch panel's behaviour is the reason this had to be a move and not a
+rewrite, and every part of it is the same object it was:
+
+- a plain `useQuery`, not a `useSuspenseQuery`, so a daemon without
+  `type=network` costs one line of prose instead of the whole route;
+- `refetchInterval` of five seconds, stopping on error;
+- `retry: false`;
+- the red alarm above the list whenever **any** port reports `present: false`,
+  and the same alarm when the daemon reports no ports at all.
+
+That last one is the point of the panel. When the switch driver does not
+probe, all four compute modules are cut off from the network while the BMC
+serving this page answers perfectly, and no other screen in this interface
+says anything is wrong. Weakening it in a page split would have traded the
+one failure this fork added a panel for against a tidier scroll.
+
+### The panel was rendered, for the first time
+
+Every other pass in this fork checked its panels by building them. This one
+rendered one. `SwitchPorts` was compiled with the repo's own vite config and
+aliases, with `@/lib/api/get` swapped for a stub that returns a fixed port
+list, and rendered to static markup by `react-dom/server` under node:
+
+| case | what came out |
+|---|---|
+| four node ports `present: false`, uplink up | alarm box, all four rows red **not detected**, uplink row normal |
+| one node port `present: false` | alarm box, one red row |
+| `ports: []` | alarm box, carrying the "no switch ports at all" wording rather than the per-port one |
+| healthy board, `ge1` down | no alarm; amber **down**, and its `lowerlayerdown` operstate when it says more than "down" |
+| linked port, 3 rx / 1 tx errors | no alarm; the error count beside the traffic |
+| `kind: "wan"` | no alarm; rendered under **Other ports** rather than dropped |
+| query in error | one line: "This BMC daemon does not report switch port status." |
+| query pending | the three-row skeleton, no alarm |
+
+The same eight cases were rendered against `hive` and against this branch and
+the output is **byte-identical**, which is what "moved, not forked" has to
+mean. The unprobed case was rendered in all six locales as well: each produced
+its own translation and none leaked a raw `network.*` key.
+
+This is a render, not a browser. There is no DOM, no CSS, no layout, no
+Tailwind resolution and no user; `react-dom/server` produced a string and a
+script read it. It says the component's logic and its translation keys still
+line up. It says nothing about how the page looks.
+
+### What the Network tab leaves unverified
+
+- **No board.** Same as everything else here: no image carrying this UI has
+  been flashed, and neither panel has parsed a live or recorded `type=info` or
+  `type=network` response. The static render used a stub.
+- **No browser.** The new tab has never been navigated to. Whether the eight
+  tabs still fit the desktop tab bar without wrapping — seven fitted — and
+  how they behave in the mobile drawer is unchecked; the bar is a flex row with
+  `justify-around` and nothing in this change alters its rules, which is
+  reasoning, not a look.
+- **The route's pending and error components have never been seen.** The new
+  `skeletons/network.tsx` is the block that was in `skeletons/info.tsx`, plus
+  a title bar copied from the Nodes skeleton because this page has a heading
+  and Info does not.
+- **Nothing tests that the tab order is the right one.** Second is a judgement
+  about where a reader will look, argued above and not measured.
+- **The five non-English locales were written without a native reviewer**, as
+  in every pass here. The two new strings are translations, not placeholders,
+  and they have had one pair of eyes.
+
+### Network tab pass: proof it still builds
+
+The same battery every pass here uses, from an empty `node_modules`:
+`devbox run -- npm ci && npm run lint && npm run build` clean, `npm audit`
+still **zero**, `eslint .` back to the same **3 warnings and 0 errors**, and
+`git status` clean after a build. `routeTree.gen.ts` *does* move this time —
+adding a route is exactly what regenerates it — so it is regenerated and
+committed, and prettier was run on the changed sources only, because
+`prettier --write "src/**"` reformats that generated file. **Two consecutive
+builds are byte-identical across all 39 files.**
+
+Every `t("…")` key literal used anywhere in `src/` — 230 of them, up from
+228 — resolves in `en.ts`, and all six locale files carry **exactly the same
+243 keys**, up from 241. That is a script over the tree, not a reading, and
+it was run against `hive` as well, so the two counts are the same
+measurement.
+
+The hand-rolled font pipeline is untouched, and measured rather than assumed:
+
+| assertion | before | after |
+|---|---|---|
+| `@font-face` rules in `dist/` | 6 | **6** |
+| `url()` references | 6 | **6** |
+| `.woff2` files shipped | 6 | **6** |
+| bare `.woff` references | 0 | **0** |
+| every `url()` target present in `dist/` | yes | **yes** |
+| the six `.woff2` files, byte for byte | — | **all six unchanged** |
+
+Both logo SVGs and both CSS files are byte-identical too, checked by hashing
+the contents rather than by comparing content-hashed filenames. `index.html`
+grows by 77 bytes: one added `modulepreload`, and it is not the new route —
+`network.lazy-*.js` is lazy and is not preloaded, which is the point.
+
+| | `hive` | with the Network tab |
+|---|---|---|
+| total `dist/` | 1,488,053 B, 37 files | **1,489,989 B, 39 files** |
+| JS | 1,231,206 B (25 files) | 1,233,065 B (27 files) |
+| CSS | 53,440 B (2 files) | 53,440 B, byte-identical |
+| fonts | 179,976 B (6 `.woff2`) | 179,976 B, byte-identical |
+| SVG | 21,355 B (2 logos) | 21,355 B, byte-identical |
+| `index.html` | 2,050 B | 2,127 B |
+| release tarball | 565,574 B | **566,001 B** |
+
+**+1,936 B, +0.13 %** — the smallest change this fork has made, and the only
+one that adds a tab. Where it went:
+
+| chunk | before | after | delta |
+|---|---|---|---|
+| `info.lazy-*.js` | 29,147 | 24,287 | **−4,860** |
+| `network.lazy-*.js` | — | 5,708 | **+5,708** |
+| main `index-*.js` | 478,464 | 479,325 | +861 |
+| `es2015-*.js` | 70,588 | 34,209 | −36,379 |
+| `button-*.js` | — | 36,354 | +36,354 |
+| seven other chunks | | | +175 |
+
+The route's own code is **+848 B** net: what left `info.lazy` came back in
+`network.lazy` plus a route module and a skeleton. The main chunk's +861 B is
+the twelve new locale strings — two keys in each of six locales — because
+`src/locale/` is imported eagerly by `i18n.ts`, so translations ship in the
+main bundle whichever route uses them.
+
+**The 36 KB pair is one chunk, not a new one.** With a fourth lazy route entry
+in the graph, rolldown split `es2015-*.js` in two and emitted the shared half
+as `button-*.js`; the two together are 25 bytes *smaller* than the single
+chunk they replace. That is also the whole of the "seven other chunks" line:
+each of them used to carry one `import … from "./es2015-*.js"` and now carries
+two import lines instead, which is −5 to +39 bytes apiece. No source file
+behind those seven chunks was touched by this change.
+
+The release tarball, built the way the release workflow builds it and with a
+fixed `mtime` on both sides so the two are comparable to each other, grows by
+**427 B**.
 
 ## Dependencies
 
