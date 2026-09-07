@@ -1,6 +1,12 @@
 @import './fonts.css' layer(base);
 
-@import 'tailwindcss';
+/* Tailwind 4 auto-detects content by scanning every non-ignored file in the
+   project, which includes README.md -- so prose leaks utilities into the
+   shipped CSS and a documentation edit changes an artifact the firmware pins
+   by sha256. Scope it to the two places that actually hold class names. */
+@import 'tailwindcss' source(none);
+@source '../index.html';
+@source './';
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
