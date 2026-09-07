@@ -135,15 +135,12 @@ const translations = {
     powerOnFor: "已上电 {{duration}}",
     powerOff: "已断电",
     powerOnUnreadable: "上电时间无法读取",
-    powerOnBeforeBmcBoot: "时间戳早于本次 BMC 启动",
     linkUp: "链路已连接",
     linkDown: "链路断开",
     linkAbsent: "未检测到交换机端口",
     linkSpeed: "{{speed}} Mb/s",
     powerOnTimeNote:
       "上电时间是 BMC 在给节点上电时写入的时间戳，并非对运行中模块的探测，而且它是相对本浏览器的时钟计算的。",
-    powerOnTimeStaleNote:
-      "被标记的节点报告的时间戳早于本 BMC 上一次启动。重启 BMC 会切断每个节点的电源，因此该时间戳熬过了一次本应将其替换的上电周期——一个直到当前版本才修复的固件缺陷会保留旧值，直到该模块下一次真正断电重启为止。请把这些时长视为不可靠，而不是长时间在线。",
   },
   console: {
     header: "计算模块串口控制台",

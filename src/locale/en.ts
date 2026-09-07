@@ -135,15 +135,12 @@ const translations = {
     powerOnFor: "powered on {{duration}} ago",
     powerOff: "powered off",
     powerOnUnreadable: "power-on time not readable",
-    powerOnBeforeBmcBoot: "stamp predates this BMC boot",
     linkUp: "link up",
     linkDown: "link down",
     linkAbsent: "switch port not detected",
     linkSpeed: "{{speed}} Mb/s",
     powerOnTimeNote:
       "Power-on time is a stamp the BMC writes when it switches a node on, not a probe of the running module, and it is measured against this browser's clock.",
-    powerOnTimeStaleNote:
-      "A marked node reports a stamp from before this BMC last booted. Rebooting the BMC cuts power to every node, so that stamp survived a power cycle which should have replaced it — a firmware bug fixed only in the current build leaves the old value in place until the module is next genuinely power-cycled. Read those durations as unreliable rather than as long uptimes.",
   },
   console: {
     header: "Serial console for a compute module",

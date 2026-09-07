@@ -187,10 +187,25 @@ export default function FanControl() {
     Record<string, { step: number; at: number }>
   >({});
 
-  const live = new Map((thermal?.cooling ?? []).map((fan) => [fan.name, fan]));
+  // The two endpoints name the same fan differently: `type=cooling` renames it
+  // to the platform node behind it ("system fan"), while `type=thermal` passes
+  // the kernel's own `type` through ("pwm-fan"). Matching on the name therefore
+  // never matched, and the board rendered the one physical fan twice -- once
+  // with a slider and once with a duty, each claiming step 4 of 6.
+  //
+  // When both endpoints report exactly one cooling device it is the same
+  // device, and this board is that case. With any other shape, fall back to
+  // matching by name: two fans that cannot be paired confidently are better
+  // shown as two rows than merged on a guess.
+  const thermalFans = thermal?.cooling ?? [];
+  const pairByPosition =
+    coolingDevices.length === 1 && thermalFans.length === 1;
+  const live = new Map(thermalFans.map((fan) => [fan.name, fan]));
 
-  const rows: FanRow[] = coolingDevices.map((device) => {
-    const reported = live.get(device.device);
+  const rows: FanRow[] = coolingDevices.map((device, index) => {
+    const reported = pairByPosition
+      ? thermalFans[index]
+      : live.get(device.device);
     return {
       name: device.device,
       max: device.max_speed,
@@ -209,8 +224,11 @@ export default function FanControl() {
   // A fan the thermal endpoint knows and `type=cooling` does not still gets a
   // row. There is nothing to set on it, but leaving it out would hide a
   // running fan behind an endpoint mismatch.
-  for (const fan of thermal?.cooling ?? []) {
-    if (!rows.some((row) => row.name === fan.name)) {
+  for (const fan of thermalFans) {
+    const alreadyShown = pairByPosition
+      ? coolingDevices.length > 0
+      : rows.some((row) => row.name === fan.name);
+    if (!alreadyShown) {
       rows.push({
         name: fan.name,
         max: fan.max_state,
