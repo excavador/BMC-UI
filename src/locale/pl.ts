@@ -5,6 +5,7 @@ const translations = {
   navigation: {
     info: "Informacje",
     nodes: "Węzły",
+    console: "Konsola",
     usb: "USB",
     firmwareUpgrade: "Aktualizacja oprogramowania",
     flashNode: "Flashowanie węzła",
@@ -106,6 +107,41 @@ const translations = {
     resetConfirmDescription:
       "To wymusi restart Węzła {{nodeId}}. Wszystkie niezapisane dane zostaną utracone.",
     dontAskAgain: "Nie pytaj ponownie o operacje zasilania węzłów",
+  },
+  console: {
+    header: "Konsola szeregowa modułu obliczeniowego",
+    nodeSelect: "Moduł",
+    readerTask: "Zadanie odczytu",
+    readerRunning: "działa",
+    readerInitialized: "nieuruchomione",
+    readerStopped: "zatrzymane",
+    readerUnknown: "nie zgłoszono",
+    readerUnavailable:
+      "Ten demon BMC nie zgłasza stanu odczytu portu szeregowego.",
+    readerNote:
+      "To jest stan zadania odczytu UART w samym demonie, a nie stan modułu. Moduł wyłączony albo uruchomiony i milczący ma zadanie odczytu w tym samym stanie co moduł w trakcie startu.",
+    stateConnecting: "łączenie",
+    stateOpen: "połączono",
+    stateClosed: "zamknięte",
+    stateFailed: "brak połączenia",
+    negotiated: "jako {{protocol}}",
+    closeCode: "kod zamknięcia {{code}}",
+    closeCodeReason: "kod zamknięcia {{code}}: {{reason}}",
+    reconnectButton: "Połącz ponownie",
+    clearButton: "Wyczyść",
+    noSession:
+      "Brak tokenu sesji, którym można uwierzytelnić konsolę. Wyloguj się i zaloguj ponownie.",
+    failedHint:
+      "Przeglądarka nie podaje, dlaczego uzgadnianie WebSocket się nie powiodło. Odrzucony token sesji i demon zbyt stary, by obsłużyć ten punkt końcowy, docierają tu tak samo: jako zamknięcie bez powodu.",
+    inputNote:
+      "Kliknij terminal, aby w nim pisać. Naciśnięcia klawiszy trafiają do modułu dokładnie tak, jak je wpisano, bez niczego doklejonego — łącznie z Ctrl-C, uzupełnianiem tabulatorem i strzałkami.",
+    ariaTerminal: "Konsola szeregowa węzła {{nodeId}}",
+    restTitle: "Alternatywa liniowa",
+    restIntro: "Ten sam UART jest dostępny przez zwykły HTTP, bez WebSocketu:",
+    restRead: "zwraca cały 16-KiB bufor węzła.",
+    restWrite: "zapisuje jedną linię.",
+    restCrlf:
+      "Zapis zawsze doklei CRLF, więc nie potrafi wysłać samego znaku sterującego: żadnego Ctrl-C, uzupełniania tabulatorem ani strzałek. W skrypcie powłoki to właściwe narzędzie, przy zgłoszeniu bootloadera — niewłaściwe.",
   },
   usb: {
     header: "Trasa USB",

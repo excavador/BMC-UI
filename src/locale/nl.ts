@@ -4,6 +4,7 @@ const translations = {
   navigation: {
     info: "Info",
     nodes: "Nodes",
+    console: "Console",
     usb: "USB",
     firmwareUpgrade: "Firmware-upgrade",
     flashNode: "Flash-node",
@@ -105,6 +106,42 @@ const translations = {
     resetConfirmDescription:
       "Dit zal Node {{nodeId}} geforceerd herstarten. Niet-opgeslagen gegevens gaan verloren.",
     dontAskAgain: "Niet meer vragen voor node-stroomacties",
+  },
+  console: {
+    header: "Seriële console voor een compute-module",
+    nodeSelect: "Module",
+    readerTask: "Leestaak",
+    readerRunning: "actief",
+    readerInitialized: "niet gestart",
+    readerStopped: "gestopt",
+    readerUnknown: "niet gemeld",
+    readerUnavailable:
+      "Deze BMC-daemon meldt geen status van het seriële lezen.",
+    readerNote:
+      "Dit is de staat van de UART-leestaak van de daemon zelf, niet die van de module. Een uitgeschakelde module, of een die is opgestart en stil is, heeft een leestaak in dezelfde staat als een module die midden in het opstarten zit.",
+    stateConnecting: "verbinden",
+    stateOpen: "verbonden",
+    stateClosed: "gesloten",
+    stateFailed: "niet verbonden",
+    negotiated: "als {{protocol}}",
+    closeCode: "sluitcode {{code}}",
+    closeCodeReason: "sluitcode {{code}}: {{reason}}",
+    reconnectButton: "Opnieuw verbinden",
+    clearButton: "Wissen",
+    noSession:
+      "Er is geen sessietoken om de console mee te authenticeren. Log uit en weer in.",
+    failedHint:
+      "Een browser zegt niet waarom een WebSocket-handshake is mislukt. Een geweigerd sessietoken en een daemon die te oud is voor dit eindpunt komen hier allebei aan als een sluiting zonder reden.",
+    inputNote:
+      "Klik in de terminal om erin te typen. Toetsaanslagen gaan onveranderd naar de module, zonder dat er iets wordt toegevoegd — Ctrl-C, tab-aanvulling en de pijltjestoetsen inbegrepen.",
+    ariaTerminal: "Seriële console voor node {{nodeId}}",
+    restTitle: "Het regelgerichte alternatief",
+    restIntro:
+      "Dezelfde UART is bereikbaar over gewone HTTP, zonder WebSocket:",
+    restRead: "geeft de volledige buffer van 16 KiB van de node terug.",
+    restWrite: "schrijft één regel.",
+    restCrlf:
+      "De schrijfkant voegt altijd CRLF toe en kan dus geen los stuurteken versturen: geen Ctrl-C, geen tab-aanvulling, geen pijltjestoetsen. Vanuit een shellscript is dat het juiste gereedschap, bij een boot-prompt het verkeerde.",
   },
   usb: {
     header: "USB-route",
